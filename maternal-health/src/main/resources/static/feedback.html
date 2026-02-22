@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>问题反馈</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.11/css/layui.css">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body {
+            background: linear-gradient(120deg, #fccb90 0%, #d57eeb 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: "Microsoft YaHei";
+            padding: 20px;
+        }
+        .feedback-card {
+            width: 600px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .header h2 { color: #333; font-weight: bold; font-size: 24px; margin-bottom: 10px; }
+        .header p { color: #666; font-size: 14px; }
+        .layui-form-label { width: 100px; padding-left: 0; text-align: left; font-weight: bold; color: #555; }
+        .layui-input-block { margin-left: 100px; }
+        .layui-input, .layui-textarea { border-radius: 10px; background: #f9f9f9; border: 1px solid #eee; }
+        .layui-input:focus, .layui-textarea:focus { border-color: #ff5ca0; background: #fff; }
+        .submit-btn {
+            background: linear-gradient(to right, #ff5ca0, #ff85c0);
+            border: none; border-radius: 25px; height: 45px; font-size: 16px;
+            box-shadow: 0 5px 15px rgba(255, 92, 160, 0.3); width: 100%; margin-top: 20px;
+        }
+        .back-btn { position: absolute; top: 20px; right: 20px; color: #999; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="feedback-card">
+    <a href="index_pregnant.html" class="back-btn"><i class="fa fa-times" style="font-size: 20px;"></i></a>
+
+    <div class="header">
+        <h2>📝 问题反馈</h2>
+        <p>请填写反馈，您可以指定医生或由系统分配。</p>
+    </div>
+    <hr style="margin: 20px 0; opacity: 0.3;">
+
+    <form class="layui-form">
+        <div class="layui-form-item">
+            <label class="layui-form-label">指定医生</label>
+            <div class="layui-input-block">
+                <select name="doctorId" id="doctorSelect">
+                    <option value="">不指定 (由值班医生回复)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">反馈标题</label>
+            <div class="layui-input-block">
+                <input type="text" name="questionTitle" required lay-verify="required" placeholder="例如：关于孕晚期耻骨痛的问题" class="layui-input">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">详细描述</label>
+            <div class="layui-input-block">
+                <textarea name="questionDesc" required lay-verify="required" placeholder="请详细描述您的症状或疑问..." class="layui-textarea" style="height: 150px;"></textarea>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">联系电话</label>
+            <div class="layui-input-block">
+                <input type="text" name="phone" required lay-verify="phone" class="layui-input">
+            </div>
+        </div>
+
+        <button class="layui-btn layui-btn-fluid submit-btn" lay-submit lay-filter="submitFeedback">提交反馈</button>
+    </form>
+</div>
+
+<script src="https://cdn.staticfile.org/layui/2.9.11/layui.js"></script>
+<script src="https://cdn.staticfile.org/axios/1.6.8/axios.min.js"></script>
+<script>
+    var user = JSON.parse(localStorage.getItem('user'));
+    if(!user) window.location.href = 'login.html';
+
+    layui.use(['form', 'layer'], function(){
+        var form = layui.form;
+        var layer = layui.layer;
+        var $ = layui.$;
+
+        if(user.username) $('input[name="phone"]').val(user.username);
+
+        // 1. 加载医生列表
+        axios.get('http://localhost:8080/api/admin/doctor/simple-list')
+            .then(res => {
+                if(res.data.code === 200) {
+                    var docs = res.data.data;
+                    docs.forEach(d => {
+                        // ★ 修改点：只显示 realName (姓名)，去掉了 username (手机号)
+                        $('#doctorSelect').append(`<option value="${d.userId}">${d.realName}</option>`);
+                    });
+                    form.render('select'); // 刷新下拉框
+                }
+            });
+
+        // 2. 提交
+        form.on('submit(submitFeedback)', function(data){
+            var field = data.field;
+            field.userId = user.userId;
+            field.realName = user.realName;
+
+            if(field.doctorId === "") delete field.doctorId;
+
+            var loading = layer.load(2);
+            axios.post('http://localhost:8080/api/consult/ask', field)
+                .then(res => {
+                    layer.close(loading);
+                    if(res.data.code === 200){
+                        layer.alert('反馈提交成功！<br>医生回复后您可以在“我的反馈”中查看。', {icon: 1, title:'提交成功'}, function(){
+                            window.location.href = 'index_pregnant.html';
+                        });
+                    } else {
+                        layer.msg(res.data.msg, {icon: 2});
+                    }
+                })
+                .catch(err => {
+                    layer.close(loading);
+                    layer.msg('提交失败', {icon: 2});
+                });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

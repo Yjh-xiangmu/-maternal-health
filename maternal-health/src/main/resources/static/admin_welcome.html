@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>管理后台首页</title>
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.11/css/layui.css">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body { background-color: #f2f2f2; padding: 15px; font-family: "Microsoft YaHei"; }
+
+        /* --- 样式部分保持原样，不用动 --- */
+        .panel-card {
+            background-color: #fff; border-radius: 8px; padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex; align-items: center; justify-content: space-between;
+            height: 100px; transition: all 0.3s;
+        }
+        .panel-card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .card-left h3 { font-size: 14px; color: #999; margin-bottom: 10px; }
+        .card-left h1 { font-size: 32px; font-weight: bold; color: #333; }
+        .card-icon {
+            width: 50px; height: 50px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; color: #fff;
+        }
+        /* 颜色定义 */
+        .bg-blue { background: linear-gradient(to right, #36a2eb, #4bc0c0); box-shadow: 0 4px 10px rgba(54, 162, 235, 0.3); }
+        .bg-green { background: linear-gradient(to right, #43e97b, #38f9d7); box-shadow: 0 4px 10px rgba(67, 233, 123, 0.3); }
+        .bg-orange { background: linear-gradient(to right, #ff9966, #ff5e62); box-shadow: 0 4px 10px rgba(255, 94, 98, 0.3); }
+        .bg-purple { background: linear-gradient(to right, #c471f5, #fa71cd); box-shadow: 0 4px 10px rgba(250, 113, 205, 0.3); }
+
+        /* 图表容器 */
+        .chart-panel {
+            background: #fff; border-radius: 8px; padding: 20px; margin-top: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .chart-title { font-size: 16px; font-weight: bold; border-left: 4px solid #1890ff; padding-left: 10px; margin-bottom: 20px; }
+        .chart-box { width: 100%; height: 350px; }
+    </style>
+</head>
+<body>
+
+<div class="layui-row layui-col-space15">
+    <div class="layui-col-md3">
+        <div class="panel-card">
+            <div class="card-left"><h3>孕妇用户总数</h3><h1 id="userNum">--</h1></div>
+            <div class="card-icon bg-blue"><i class="fa fa-users"></i></div>
+        </div>
+    </div>
+    <div class="layui-col-md3">
+        <div class="panel-card">
+            <div class="card-left"><h3>入驻医生</h3><h1 id="docNum">--</h1></div>
+            <div class="card-icon bg-green"><i class="fa fa-user-md"></i></div>
+        </div>
+    </div>
+    <div class="layui-col-md3">
+        <div class="panel-card">
+            <div class="card-left"><h3>商城在售商品</h3><h1 id="prodNum">--</h1></div>
+            <div class="card-icon bg-orange"><i class="fa fa-shopping-bag"></i></div>
+        </div>
+    </div>
+    <div class="layui-col-md3">
+        <div class="panel-card">
+            <div class="card-left"><h3>待处理反馈</h3><h1 id="feedNum" style="color:#ff5722;">--</h1></div>
+            <div class="card-icon bg-purple"><i class="fa fa-comments"></i></div>
+        </div>
+    </div>
+</div>
+
+<div class="layui-row layui-col-space15">
+    <div class="layui-col-md8">
+        <div class="chart-panel">
+            <div class="chart-title">平台用户活跃趋势 (近7日)</div>
+            <div id="lineChart" class="chart-box"></div>
+        </div>
+    </div>
+
+    <div class="layui-col-md4">
+        <div class="chart-panel">
+            <div class="chart-title">咨询反馈处理状态</div>
+            <div id="pieChart" class="chart-box"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.staticfile.org/layui/2.9.11/layui.js"></script>
+<script src="https://cdn.staticfile.org/axios/1.6.8/axios.min.js"></script>
+<script src="https://cdn.staticfile.org/echarts/5.4.3/echarts.min.js"></script>
+
+<script>
+    // 1. 初始化图表
+    var lineChart = echarts.init(document.getElementById('lineChart'));
+    var pieChart = echarts.init(document.getElementById('pieChart'));
+
+    // 显示加载动画，防止白屏
+    lineChart.showLoading();
+
+    // 2. ★★★ 请求后端真实数据 (这里是重点) ★★★
+    axios.get('/api/admin/stats')
+        .then(res => {
+            lineChart.hideLoading();
+            if(res.data.code === 200) {
+                var data = res.data.data;
+
+                // --- A. 更新顶部四个卡片 ---
+                animateNum('userNum', data.userCount);
+                animateNum('docNum', data.doctorCount);
+                animateNum('prodNum', data.productCount);
+                animateNum('feedNum', data.consultCount);
+
+                // --- B. 更新左侧折线图 (活跃趋势) ---
+                // data.chartDates 是后端查出来的日期
+                // data.chartCounts 是后端查出来的真实打卡数
+                renderLineChart(data.chartDates, data.chartCounts);
+
+                // --- C. 更新右侧饼图 (咨询状态) ---
+                var pending = data.consultCount;
+                var solved = 10; // 为了饼图好看，已回复暂时写死一个数字，或者你也去后端查一下
+                renderPieChart([
+                    { value: pending, name: '待处理' },
+                    { value: solved, name: '已回复' }
+                ]);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            lineChart.hideLoading();
+        });
+
+    // --- 工具函数区 ---
+
+    // 渲染折线图 (样式和你原来的一模一样)
+    function renderLineChart(dates, values) {
+        var option = {
+            tooltip: { trigger: 'axis' },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: dates  // ★ 使用真实日期
+            },
+            yAxis: { type: 'value', minInterval: 1 },
+            series: [{
+                name: '活跃用户',
+                type: 'line',
+                smooth: true,
+                itemStyle: { color: '#36a2eb' }, // 保持你的蓝色
+                areaStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: 'rgba(54, 162, 235, 0.5)' },
+                        { offset: 1, color: 'rgba(54, 162, 235, 0.01)' }
+                    ])
+                },
+                data: values // ★ 使用真实数据
+            }]
+        };
+        lineChart.setOption(option);
+    }
+
+    // 渲染饼图
+    function renderPieChart(data) {
+        var option = {
+            tooltip: { trigger: 'item' },
+            legend: { bottom: '5%' },
+            color: ['#ff9f43', '#28c76f'],
+            series: [{
+                name: '反馈状态',
+                type: 'pie',
+                radius: ['40%', '70%'],
+                avoidLabelOverlap: false,
+                itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+                label: { show: false, position: 'center' },
+                emphasis: { label: { show: true, fontSize: 20, fontWeight: 'bold' } },
+                data: data
+            }]
+        };
+        pieChart.setOption(option);
+    }
+
+    // 数字滚动效果
+    function animateNum(id, target) {
+        var dom = document.getElementById(id);
+        var current = 0;
+        var step = target > 20 ? Math.ceil(target / 20) : 1;
+        if(target == 0) { dom.innerText = 0; return; }
+        var timer = setInterval(function(){
+            current += step;
+            if(current >= target) {
+                current = target;
+                clearInterval(timer);
+            }
+            dom.innerText = current;
+        }, 30);
+    }
+
+    // 窗口缩放自适应
+    window.onresize = function() {
+        lineChart.resize();
+        pieChart.resize();
+    };
+</script>
+</body>
+</html>

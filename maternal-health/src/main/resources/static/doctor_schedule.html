@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>我的排班与任务</title>
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.11/css/layui.css">
+    <style>
+        body { padding: 20px; background: #f2f7f8; }
+        .container { display: flex; gap: 20px; }
+
+        .calendar-box {
+            width: 350px; background: #fff; border-radius: 8px; padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .task-list-box {
+            flex: 1; background: #fff; border-radius: 8px; padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .page-title { font-size: 18px; font-weight: bold; border-left: 4px solid #009688; padding-left: 10px; margin-bottom: 20px; color: #333; }
+
+        /* 日历标记样式 */
+        .layui-laydate-content td.has-task::after {
+            content: ''; position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%);
+            width: 6px; height: 6px; border-radius: 50%; background: #ff5722;
+        }
+
+        .task-item { padding: 15px; border-bottom: 1px dashed #eee; transition: background 0.3s; }
+        .task-item:hover { background: #fafafa; }
+        .task-time { color: #999; font-size: 12px; margin-bottom: 5px; }
+        .task-title { font-size: 15px; font-weight: bold; color: #333; margin-bottom: 5px; }
+        .task-user { color: #009688; font-size: 13px; }
+
+        .empty-tip { text-align: center; color: #ccc; padding: 50px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="calendar-box">
+        <div class="page-title">📅 工作日历</div>
+        <div id="workCalendar"></div>
+        <div style="margin-top: 20px; color: #666; font-size: 12px;">
+            <p><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff5722;margin-right:5px;"></span> 红点：当日有咨询记录</p>
+        </div>
+    </div>
+
+    <div class="task-list-box">
+        <div class="page-title">📋 <span id="selectedDate">今日</span> 任务清单</div>
+        <div id="taskList">
+            <div class="empty-tip">请在左侧选择日期查看</div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.staticfile.org/layui/2.9.11/layui.js"></script>
+<script src="https://cdn.staticfile.org/axios/1.6.8/axios.min.js"></script>
+<script>
+    var user = JSON.parse(localStorage.getItem('user'));
+    if(!user || user.role !== 1) window.location.href = 'login.html';
+
+    layui.use(['laydate', 'layer'], function(){
+        var laydate = layui.laydate;
+        var $ = layui.$;
+
+        var allTasks = []; // 存所有数据
+
+        // 1. 先获取该医生的所有任务数据
+        axios.get('http://localhost:8080/api/consult/doctor/list?doctorId=' + user.userId)
+            .then(res => {
+                allTasks = res.data.data;
+                renderCalendar(); // 数据拿到了再渲染日历
+
+                // 默认显示今天的
+                var today = new Date().toISOString().split('T')[0];
+                showTasks(today);
+            });
+
+        // 2. 渲染日历
+        function renderCalendar() {
+            laydate.render({
+                elem: '#workCalendar',
+                position: 'static',
+                theme: '#009688',
+                showBottom: false,
+                mark: getMarks(), // 标记有任务的日期
+                done: function(value){
+                    showTasks(value); // 点击日期触发
+                }
+            });
+        }
+
+        // 3. 生成日历标记 (把有任务的日期找出来)
+        function getMarks() {
+            var marks = {};
+            allTasks.forEach(task => {
+                var date = task.createTime.split('T')[0]; // yyyy-MM-dd
+                marks[date] = ''; // 只要有任务就标记
+            });
+            return marks;
+        }
+
+        // 4. 显示选中日期的任务
+        function showTasks(dateStr) {
+            $('#selectedDate').text(dateStr);
+            var tasks = allTasks.filter(t => t.createTime.startsWith(dateStr));
+
+            var html = '';
+            if(tasks.length === 0) {
+                html = '<div class="empty-tip"><i class="layui-icon layui-icon-face-smile" style="font-size: 40px;"></i><p>当天无安排，好好休息！</p></div>';
+            } else {
+                tasks.forEach(t => {
+                    var statusBadge = t.status === 1
+                        ? '<span class="layui-badge layui-bg-green">已完成</span>'
+                        : '<span class="layui-badge">待处理</span>';
+
+                    html += `
+                    <div class="task-item">
+                        <div style="float:right;">${statusBadge}</div>
+                        <div class="task-time"><i class="layui-icon layui-icon-time"></i> ${t.createTime.replace('T', ' ')}</div>
+                        <div class="task-title">${t.questionTitle}</div>
+                        <div class="task-user">
+                            <i class="layui-icon layui-icon-user"></i> 患者：${t.realName}
+                            <span style="margin-left:10px; color:#999;">${t.questionDesc.substring(0, 30)}...</span>
+                        </div>
+                    </div>`;
+                });
+            }
+            $('#taskList').html(html);
+        }
+    });
+</script>
+</body>
+</html>

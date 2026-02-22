@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>用户管理</title>
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.11/css/layui.css">
+    <style>
+        body{padding: 15px;}
+        /* 详情弹窗样式 */
+        .detail-box { padding: 20px; line-height: 2; font-size: 14px; color: #333; }
+        .detail-item { border-bottom: 1px dashed #eee; padding: 8px 0; display: flex; }
+        .detail-label { width: 100px; color: #999; font-weight: bold; }
+        .detail-val { flex: 1; }
+        .risk-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; color: white; background: #2db7f5; }
+        .risk-high { background: #ff4d4f; }
+    </style>
+</head>
+<body>
+
+<div class="layui-card">
+    <div class="layui-card-body">
+        <div class="layui-form layui-row layui-col-space15">
+            <div class="layui-col-md3">
+                <input type="text" id="keyword" placeholder="搜索手机号或姓名" class="layui-input">
+            </div>
+            <div class="layui-col-md2">
+                <button class="layui-btn layui-btn-normal" id="searchBtn">搜索</button>
+                <button class="layui-btn layui-btn-primary" onclick="location.reload()">重置</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<table id="userTable" lay-filter="userTable"></table>
+
+<script type="text/html" id="toolBar">
+    <a class="layui-btn layui-btn-xs layui-btn-primary" lay-event="detail">查看档案</a>
+    {{#  if(d.status == 1){ }}
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="ban">封禁</a>
+    {{#  } else { }}
+    <a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="unban">解封</a>
+    {{#  } }}
+</script>
+
+<script type="text/html" id="statusTpl">
+    {{#  if(d.status == 1){ }}
+    <span class="layui-badge layui-bg-green">正常</span>
+    {{#  } else { }}
+    <span class="layui-badge layui-bg-gray">已禁用</span>
+    {{#  } }}
+</script>
+
+<script src="https://cdn.staticfile.org/layui/2.9.11/layui.js"></script>
+<script src="https://cdn.staticfile.org/axios/1.6.8/axios.min.js"></script>
+
+<script>
+    layui.use(['table', 'layer'], function(){
+        var table = layui.table;
+        var layer = layui.layer;
+        var $ = layui.$;
+
+        table.render({
+            elem: '#userTable',
+            url: 'http://localhost:8080/api/admin/user/list',
+            cols: [[
+                {field: 'userId', title: 'ID', width: 80, sort: true},
+                {field: 'username', title: '手机号', width: 150},
+                {field: 'realName', title: '真实姓名', width: 120},
+                {field: 'createTime', title: '注册时间', width: 180},
+                {field: 'status', title: '状态', width: 100, templet: '#statusTpl', align:'center'},
+                {title: '操作', width: 180, toolbar: '#toolBar', align:'center'}
+            ]],
+            page: true, limit: 10
+        });
+
+        $('#searchBtn').click(function(){
+            table.reload('userTable', { where: { keyword: $('#keyword').val() }, page: { curr: 1 } });
+        });
+
+        table.on('tool(userTable)', function(obj){
+            var data = obj.data;
+            var event = obj.event;
+
+            if(event === 'ban' || event === 'unban'){
+                // ... 封禁逻辑不变 ...
+                var newStatus = (event === 'ban') ? 0 : 1;
+                layer.confirm('确定操作吗？', function(index){
+                    axios.post('http://localhost:8080/api/admin/user/status', {
+                        userId: data.userId, status: newStatus
+                    }).then(res => {
+                        if(res.data.code === 200){ layer.msg('操作成功'); table.reload('userTable'); }
+                    });
+                    layer.close(index);
+                });
+            } else if(event === 'detail'){
+                // ★★★ 新增：查看详情逻辑 ★★★
+                var loading = layer.load(2);
+                axios.get('http://localhost:8080/api/profile/info?userId=' + data.userId)
+                    .then(res => {
+                        layer.close(loading);
+                        var p = res.data.data.profile;
+
+                        if(!p) {
+                            layer.msg('该用户尚未填写档案信息', {icon: 0});
+                            return;
+                        }
+
+                        // 构造漂亮的 HTML 模板
+                        var riskClass = p.riskLevel && p.riskLevel.includes('高风险') ? 'risk-high' : '';
+                        var html = `
+                                <div class="detail-box">
+                                    <div class="detail-item"><span class="detail-label">姓名：</span><span class="detail-val">${data.realName}</span></div>
+                                    <div class="detail-item"><span class="detail-label">手机号：</span><span class="detail-val">${data.username}</span></div>
+                                    <div class="detail-item"><span class="detail-label">末次月经：</span><span class="detail-val">${p.lmpDate || '--'}</span></div>
+                                    <div class="detail-item"><span class="detail-label">预产期：</span><span class="detail-val">${p.eddDate || '--'}</span></div>
+                                    <div class="detail-item"><span class="detail-label">孕前体重：</span><span class="detail-val">${p.preWeight ? p.preWeight + ' kg' : '--'}</span></div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">风险评估：</span>
+                                        <span class="detail-val"><span class="risk-tag ${riskClass}">${p.riskLevel || '未评估'}</span></span>
+                                    </div>
+                                </div>
+                            `;
+
+                        layer.open({
+                            type: 1,
+                            title: '👩‍⚕️ 孕妇档案详情',
+                            area: ['400px', '400px'],
+                            content: html,
+                            shadeClose: true
+                        });
+                    });
+            }
+        });
+    });
+</script>
+</body>
+</html>

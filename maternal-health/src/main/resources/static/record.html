@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>每日健康打卡</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.11/css/layui.css">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #fff0f5 0%, #ffe4e1 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: "Microsoft YaHei", sans-serif;
+            padding: 20px 0; /* 防止手机端贴边 */
+        }
+
+        .record-card {
+            width: 450px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 25px;
+            padding: 35px;
+            box-shadow: 0 15px 40px rgba(255, 92, 160, 0.15);
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .header { text-align: center; margin-bottom: 25px; }
+        .header h2 { color: #ff5ca0; font-weight: bold; font-size: 24px; }
+        .header p { color: #999; font-size: 13px; margin-top: 5px; }
+
+        /* 状态徽章 */
+        .status-badge {
+            position: absolute; top: 20px; right: 20px;
+            background: #eee; color: #999; padding: 5px 12px;
+            border-radius: 15px; font-size: 12px; display: none;
+        }
+        .status-badge.done { background: #e8f5e9; color: #4caf50; display: block; border: 1px solid #c8e6c9; }
+
+        .form-group { margin-bottom: 20px; }
+        .label-title { font-weight: bold; color: #555; display: block; margin-bottom: 8px; font-size: 14px; }
+        .label-title i { color: #ff5ca0; margin-right: 5px; width: 20px; text-align: center; }
+
+        .layui-input {
+            border-radius: 10px; background: #f9f9f9; border: 1px solid #eee; transition: all 0.3s;
+        }
+        .layui-input:focus { border-color: #ff5ca0; background: #fff; box-shadow: 0 0 0 3px rgba(255, 92, 160, 0.1); }
+
+        /* 双输入框布局 (血压) */
+        .input-row { display: flex; align-items: center; gap: 10px; }
+        .input-row span { color: #999; font-weight: bold; }
+
+        /* 心情选择器 */
+        .mood-selector { display: flex; justify-content: space-around; padding: 5px 0; }
+        .mood-item { font-size: 30px; cursor: pointer; transition: transform 0.2s; opacity: 0.5; filter: grayscale(100%); }
+        .mood-item:hover { transform: scale(1.2); }
+        .mood-item.active { opacity: 1; transform: scale(1.3); filter: grayscale(0%); }
+
+        .submit-btn {
+            width: 100%; height: 45px; border-radius: 25px;
+            background: linear-gradient(to right, #ff85c0, #ff5ca0);
+            border: none; color: white; font-size: 16px; font-weight: bold;
+            box-shadow: 0 8px 20px rgba(255, 92, 160, 0.4); cursor: pointer; transition: transform 0.2s;
+            margin-top: 10px;
+        }
+        .submit-btn:hover { transform: translateY(-3px); }
+        .submit-btn.update-mode { background: linear-gradient(to right, #4facfe, #00f2fe); box-shadow: 0 8px 20px rgba(0, 242, 254, 0.4); }
+
+        .back-btn { position: absolute; top: 20px; left: 20px; color: #999; cursor: pointer; z-index: 10; font-size: 18px; }
+    </style>
+</head>
+<body>
+
+<div class="record-card">
+    <i class="fa fa-arrow-left back-btn" onclick="window.location.href='index_pregnant.html'"></i>
+
+    <div id="statusBadge" class="status-badge done"><i class="fa fa-check-circle"></i> 今日已打卡</div>
+
+    <div class="header">
+        <h2>📝 每日健康打卡</h2>
+        <p id="dateDisplay">2025-XX-XX</p>
+    </div>
+
+    <form class="layui-form" lay-filter="recordForm">
+
+        <div class="form-group">
+            <span class="label-title"><i class="fa fa-balance-scale"></i> 今日体重 (kg)</span>
+            <input type="number" name="weight" id="weightInput" step="0.1" placeholder="例如：60.5" class="layui-input" lay-verify="required">
+        </div>
+
+        <div class="form-group">
+            <span class="label-title"><i class="fa fa-tint"></i> 血糖数值 (mmol/L)</span>
+            <input type="number" name="bloodSugar" id="sugarInput" step="0.1" placeholder="空腹或餐后数值，如 5.6" class="layui-input">
+        </div>
+
+        <div class="form-group">
+            <span class="label-title"><i class="fa fa-heartbeat"></i> 血压 (mmHg)</span>
+            <div class="input-row">
+                <input type="number" name="bloodPressureHigh" id="bphInput" placeholder="高压(收缩压)" class="layui-input">
+                <span>/</span>
+                <input type="number" name="bloodPressureLow" id="bplInput" placeholder="低压(舒张压)" class="layui-input">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <span class="label-title"><i class="fa fa-child"></i> 胎动次数 (次/12小时)</span>
+            <div id="slideTest" class="demo-slider" style="margin-top: 15px;"></div>
+            <div style="display:flex; justify-content: space-between; margin-top:5px;">
+                <span style="color:#999; font-size:12px;">0</span>
+                <span style="color:#ff5ca0; font-weight:bold;" id="fetalVal">0次</span>
+                <span style="color:#999; font-size:12px;">100</span>
+            </div>
+            <input type="hidden" name="fetalMovement" id="fetalInput" value="0">
+        </div>
+
+        <div class="form-group">
+            <span class="label-title"><i class="fa fa-smile-o"></i> 身体感受</span>
+            <div class="mood-selector">
+                <div class="mood-item" data-val="开心">😄<div style="font-size:12px;text-align:center;">开心</div></div>
+                <div class="mood-item" data-val="平静">😌<div style="font-size:12px;text-align:center;">平静</div></div>
+                <div class="mood-item" data-val="疲惫">😫<div style="font-size:12px;text-align:center;">疲惫</div></div>
+                <div class="mood-item" data-val="不适">🤢<div style="font-size:12px;text-align:center;">不适</div></div>
+            </div>
+            <input type="hidden" name="feeling" id="moodInput" lay-verify="required">
+        </div>
+
+        <div class="form-group">
+            <span class="label-title"><i class="fa fa-pencil"></i> 备注 (选填)</span>
+            <textarea name="remark" id="remarkInput" placeholder="今天有什么特别的情况吗？" class="layui-textarea" style="border-radius:10px; min-height:60px;"></textarea>
+        </div>
+
+        <button type="button" class="submit-btn" id="submitBtn" lay-submit lay-filter="saveBtn">提交打卡</button>
+    </form>
+</div>
+
+<script src="https://cdn.staticfile.org/layui/2.9.11/layui.js"></script>
+<script src="https://cdn.staticfile.org/axios/1.6.8/axios.min.js"></script>
+<script src="https://cdn.staticfile.org/jquery/3.7.1/jquery.min.js"></script>
+
+<script>
+    var now = new Date();
+    document.getElementById('dateDisplay').innerText = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日';
+
+    var user = JSON.parse(localStorage.getItem('user'));
+    if(!user) window.location.href = 'login.html';
+
+    layui.use(['slider', 'form', 'layer'], function(){
+        var slider = layui.slider;
+        var form = layui.form;
+        var layer = layui.layer;
+        var slideInst;
+
+        slideInst = slider.render({
+            elem: '#slideTest',
+            min: 0, max: 100, theme: '#ff5ca0',
+            change: function(value){
+                $('#fetalVal').text(value + '次');
+                $('#fetalInput').val(value);
+            }
+        });
+
+        // 检查今日状态 & 回显数据
+        function checkTodayStatus() {
+            axios.get('http://localhost:8080/api/record/today?userId=' + user.userId)
+                .then(res => {
+                    if(res.data.code === 200 && res.data.hasRecord) {
+                        var oldData = res.data.data;
+
+                        $('#statusBadge').show();
+                        $('#submitBtn').text('修改今日数据').addClass('update-mode');
+
+                        // 回显数据
+                        $('#weightInput').val(oldData.weight);
+                        $('#sugarInput').val(oldData.bloodSugar);       // 回显血糖
+                        $('#bphInput').val(oldData.bloodPressureHigh); // 回显高压
+                        $('#bplInput').val(oldData.bloodPressureLow);  // 回显低压
+                        $('#remarkInput').val(oldData.remark);
+
+                        slideInst.setValue(oldData.fetalMovement);
+
+                        if(oldData.feeling) {
+                            $('.mood-item').removeClass('active');
+                            $('.mood-item[data-val="'+oldData.feeling+'"]').addClass('active');
+                            $('#moodInput').val(oldData.feeling);
+                        }
+                    }
+                });
+        }
+        checkTodayStatus();
+
+        $('.mood-item').click(function(){
+            $('.mood-item').removeClass('active');
+            $(this).addClass('active');
+            $('#moodInput').val($(this).data('val'));
+        });
+
+        form.on('submit(saveBtn)', function(data){
+            var field = data.field;
+            if(!field.feeling) { layer.msg('请选择一个心情图标哦~', {icon: 5, anim: 6}); return false; }
+            field.userId = user.userId;
+
+            var loading = layer.load(2);
+            axios.post('http://localhost:8080/api/record/add', field)
+                .then(res => {
+                    layer.close(loading);
+                    if(res.data.code === 200){
+                        var isUpdate = res.data.msg.includes("更新");
+                        layer.msg(isUpdate ? '修改成功！' : '打卡成功！', {icon: 1, time: 1500}, function(){
+                            window.location.href = 'index_pregnant.html';
+                        });
+                    } else {
+                        layer.msg('操作失败', {icon: 2});
+                    }
+                });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

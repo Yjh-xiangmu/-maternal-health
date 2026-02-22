@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>母婴严选商城</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.11/css/layui.css">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        /* 动态背景 */
+        body {
+            background: linear-gradient(120deg, #fccb90 0%, #d57eeb 100%);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            min-height: 100vh;
+            font-family: "Microsoft YaHei";
+            padding: 20px;
+        }
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        /* 顶部导航栏 (玻璃) */
+        .mall-header {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 20px 30px;
+            border-radius: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .search-box { position: relative; width: 300px; }
+        .search-box input {
+            border-radius: 20px; padding-right: 40px; border: 1px solid #eee; background: #f9f9f9;
+        }
+        .search-btn {
+            position: absolute; right: 5px; top: 3px; border: none; background: #ff5ca0; color: white;
+            width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+        }
+
+        /* 分类标签 */
+        .category-bar { margin-bottom: 25px; text-align: center; }
+        .cate-btn {
+            display: inline-block;
+            padding: 8px 25px;
+            background: rgba(255,255,255,0.6);
+            margin: 0 10px;
+            border-radius: 30px;
+            cursor: pointer;
+            color: #555;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .cate-btn:hover, .cate-btn.active {
+            background: #fff; color: #ff5ca0; transform: scale(1.1); box-shadow: 0 5px 15px rgba(255, 92, 160, 0.3);
+        }
+
+        /* 商品网格 */
+        .goods-list { display: flex; flex-wrap: wrap; gap: 20px; }
+
+        .goods-card {
+            width: calc(25% - 15px); /* 一行4个 */
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+        .goods-card:hover { transform: translateY(-10px); box-shadow: 0 15px 35px rgba(0,0,0,0.15); }
+
+        /* 图片容器 */
+        .img-box {
+            width: 100%; height: 200px; overflow: hidden; background: #f4f4f4; display: flex; align-items: center; justify-content: center;
+        }
+        .img-box img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+        .goods-card:hover .img-box img { transform: scale(1.1); }
+
+        /* 商品信息 */
+        .goods-info { padding: 15px; }
+        .goods-title { font-size: 15px; font-weight: bold; color: #333; margin-bottom: 10px; height: 40px; overflow: hidden; }
+        .goods-tag { font-size: 12px; color: #999; background: #f0f0f0; padding: 2px 6px; border-radius: 4px; }
+        .goods-price { color: #ff5ca0; font-size: 20px; font-weight: bold; margin-top: 10px; }
+        .goods-price small { font-size: 12px; }
+
+        .buy-btn {
+            float: right; background: #ff5ca0; color: white; border: none; padding: 5px 12px; border-radius: 15px; font-size: 12px; margin-top: 5px;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .goods-card { width: calc(50% - 10px); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="mall-header">
+        <div style="display:flex; align-items:center;">
+            <a href="index_pregnant.html" class="layui-btn layui-btn-sm layui-btn-primary" style="border-radius:15px; margin-right:20px;">
+                <i class="fa fa-arrow-left"></i> 返回
+            </a>
+            <h2 style="font-weight:bold; color:#333;"><i class="fa fa-shopping-bag" style="color:#ff5ca0;"></i> 母婴严选商城</h2>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="搜索商品..." class="layui-input">
+            <button class="search-btn" id="searchBtn"><i class="fa fa-search"></i></button>
+        </div>
+    </div>
+
+    <div class="category-bar">
+        <span class="cate-btn active" data-cate="">全部</span>
+        <span class="cate-btn" data-cate="孕妈用品">🤰 孕妈用品</span>
+        <span class="cate-btn" data-cate="宝宝洗护">👶 宝宝洗护</span>
+        <span class="cate-btn" data-cate="营养辅食">🥗 营养辅食</span>
+        <span class="cate-btn" data-cate="玩具">🧸 益智玩具</span>
+    </div>
+
+    <div class="goods-list" id="goodsBox">
+    </div>
+
+</div>
+
+<script src="https://cdn.staticfile.org/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdn.staticfile.org/layui/2.9.11/layui.js"></script>
+<script src="https://cdn.staticfile.org/axios/1.6.8/axios.min.js"></script>
+
+<script>
+    layui.use(['layer'], function(){
+        var layer = layui.layer;
+
+        // 加载商品
+        function loadProducts(category, keyword) {
+            var loading = layer.load(2);
+
+            axios.get('http://localhost:8080/api/product/list', {
+                params: { category: category, keyword: keyword }
+            }).then(res => {
+                layer.close(loading);
+                var list = res.data.data;
+                var html = '';
+
+                if(list.length === 0) {
+                    html = '<div style="width:100%; text-align:center; padding:50px; color:#fff;">暂无相关商品</div>';
+                } else {
+                    list.forEach(item => {
+                        // 如果没有图片，用默认图
+                        var img = item.coverImg || 'https://cdn-icons-png.flaticon.com/512/1554/1554591.png';
+
+                        html += `<div class="goods-card" onclick="showDetail('${item.productName}', ${item.price}, '${item.coverImg}')">
+                            <div class="img-box">
+                                <img src="${img}" alt="${item.productName}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1554/1554591.png'">
+                            </div>
+                            <div class="goods-info">
+                                <div class="goods-title">${item.productName}</div>
+                                <span class="goods-tag">${item.category}</span>
+                                <div class="goods-price">
+                                    <small>¥</small> ${item.price}
+                                    <button class="buy-btn">立即购买</button>
+                                </div>
+                            </div>
+                        </div>`;
+                    });
+                }
+                $('#goodsBox').html(html);
+            });
+        }
+
+        // 初始加载全部
+        loadProducts('', '');
+
+        // 点击分类
+        $('.cate-btn').click(function(){
+            $('.cate-btn').removeClass('active');
+            $(this).addClass('active');
+            var cate = $(this).data('cate');
+            loadProducts(cate, '');
+        });
+
+        // 搜索
+        $('#searchBtn').click(function(){
+            var key = $('#searchInput').val();
+            loadProducts('', key);
+        });
+
+        // 模拟详情/购买
+        // 修改后的购买逻辑：创建订单 -> 跳收银台
+        window.showDetail = function(name, price, imgUrl) {
+            layer.confirm(`确认下单购买 <b>${name}</b> 吗？<br>价格：¥${price}`, {
+                title: '🛒 下单确认',
+                btn: ['立即下单', '再逛逛']
+            }, function(){
+                var user = JSON.parse(localStorage.getItem('user'));
+                if(!user) {
+                    layer.msg('请先登录'); return;
+                }
+
+                var loading = layer.load(2);
+                // 1. 请求创建订单
+                axios.post('http://localhost:8080/api/order/create', {
+                    userId: user.userId,
+                    productName: name,
+                    price: price,
+                    productImg: imgUrl // 注意：这需要你在 HTML 拼接时把图片传进来
+                }).then(res => {
+                    layer.close(loading);
+                    if(res.data.code === 200){
+                        // 2. 拿到订单号，跳去收银台
+                        var orderNo = res.data.data;
+                        window.location.href = `pay.html?orderNo=${orderNo}&price=${price}`;
+                    }
+                });
+            });
+        };
+    });
+</script>
+</body>
+</html>

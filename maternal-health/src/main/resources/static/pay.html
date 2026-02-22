@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>收银台</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.11/css/layui.css">
+    <style>
+        body { background-color: #f5f7fa; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: "Microsoft YaHei"; }
+        .pay-card { width: 380px; background: #fff; padding: 40px 30px; border-radius: 15px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .price-text { color: #ff5722; font-size: 40px; font-weight: bold; margin: 15px 0 25px; }
+        .qr-box { width: 180px; height: 180px; margin: 0 auto 20px; border: 1px solid #eee; padding: 5px; border-radius: 8px; }
+        .qr-box img { width: 100%; height: 100%; border-radius: 4px; }
+        .tips { color: #999; font-size: 13px; margin-bottom: 30px; line-height: 1.6; }
+    </style>
+</head>
+<body>
+
+<div class="pay-card">
+    <h3 style="font-weight:bold; color:#333;"><i class="layui-icon layui-icon-rmb"></i> 在线支付</h3>
+    <div class="price-text" id="priceDisplay">¥ 0.00</div>
+
+    <div class="qr-box">
+        <img src="http://localhost:8080/files/pay_code.jpg" onerror="this.src='https://cdn-icons-png.flaticon.com/512/10003/10003970.png'">
+    </div>
+
+    <p class="tips">请使用 微信 / 支付宝 扫一扫<br>支付成功后，请务必点击下方按钮确认</p>
+
+    <button class="layui-btn layui-btn-fluid layui-btn-normal layui-btn-radius" id="confirmBtn">我已完成支付</button>
+    <a href="mall.html" style="display:block; margin-top:20px; color:#999; font-size:12px;">暂不支付，返回商城</a>
+</div>
+
+<script src="https://cdn.staticfile.org/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdn.staticfile.org/layui/2.9.11/layui.js"></script>
+<script src="https://cdn.staticfile.org/axios/1.6.8/axios.min.js"></script>
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderNo = urlParams.get('orderNo');
+    const price = urlParams.get('price');
+
+    $('#priceDisplay').text('¥ ' + price);
+
+    layui.use(['layer'], function(){
+        var layer = layui.layer;
+
+        $('#confirmBtn').click(function(){
+            var loading = layer.load(2);
+            // 调用后端接口，把订单状态改成 1 (已支付)
+            axios.post('http://localhost:8080/api/order/pay', { orderNo: orderNo })
+                .then(res => {
+                    layer.close(loading);
+                    if(res.data.code === 200){
+                        layer.msg('支付成功！正在生成发货单...', {icon: 1, time: 2000}, function(){
+                            window.location.href = 'my_orders.html'; // 跳去订单列表
+                        });
+                    } else {
+                        layer.msg('订单异常', {icon: 2});
+                    }
+                });
+        });
+    });
+</script>
+</body>
+</html>

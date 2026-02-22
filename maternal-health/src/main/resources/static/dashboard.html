@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>健康数据看板</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.11/css/layui.css">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body { background-color: #f7f8fa; padding: 20px; font-family: "Microsoft YaHei"; }
+
+        /* 顶部渐变卡片 */
+        .header-card {
+            background: linear-gradient(120deg, #ff9a9e 0%, #fecfef 100%);
+            color: white; padding: 25px; border-radius: 15px; margin-bottom: 20px;
+            box-shadow: 0 10px 20px rgba(255, 154, 158, 0.3);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        /* 图表容器卡片 */
+        .chart-container {
+            background: #fff; border-radius: 15px; padding: 20px; margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+            animation: slideUp 0.8s ease-out;
+            height: 380px; /* 统一高度 */
+        }
+
+        /* 标题栏 */
+        .chart-title {
+            font-size: 16px; font-weight: bold; color: #333; margin-bottom: 15px;
+            border-left: 4px solid #ff5ca0; padding-left: 10px; display: flex; justify-content: space-between;
+        }
+
+        .chart-box { width: 100%; height: 320px; }
+
+        /* 不同的标题颜色区分 */
+        .title-weight { border-left-color: #ff5ca0; } /* 粉 */
+        .title-mood   { border-left-color: #2ed573; } /* 绿 */
+        .title-sugar  { border-left-color: #ff9f43; } /* 橙 */
+        .title-bp     { border-left-color: #36a2eb; } /* 蓝 */
+        .title-fetal  { border-left-color: #a18cd1; } /* 紫 */
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="header-card">
+    <div>
+        <h2 style="font-weight:bold; font-size:22px;">📊 健康数据看板</h2>
+        <p style="opacity:0.9; margin-top:5px;">五维一体监测：体重 · 心情 · 血糖 · 血压 · 胎动</p>
+    </div>
+    <a href="index_pregnant.html" class="layui-btn layui-btn-primary layui-border-white" style="border-radius:20px; color:white;">返回首页</a>
+</div>
+
+<div class="layui-row layui-col-space20">
+
+    <div class="layui-col-md4">
+        <div class="chart-container">
+            <div class="chart-title title-weight">
+                <span>⚖️ 体重趋势 (kg)</span>
+            </div>
+            <div id="weightChart" class="chart-box"></div>
+        </div>
+    </div>
+
+    <div class="layui-col-md4">
+        <div class="chart-container">
+            <div class="chart-title title-mood">
+                <span>😄 心情分布统计</span>
+            </div>
+            <div id="moodChart" class="chart-box"></div>
+        </div>
+    </div>
+
+    <div class="layui-col-md4">
+        <div class="chart-container">
+            <div class="chart-title title-sugar">
+                <span>🩸 血糖监测 (mmol/L)</span>
+            </div>
+            <div id="sugarChart" class="chart-box"></div>
+        </div>
+    </div>
+
+</div>
+
+<div class="layui-row layui-col-space20">
+
+    <div class="layui-col-md6">
+        <div class="chart-container">
+            <div class="chart-title title-bp">
+                <span>🩺 血压监测 (mmHg)</span>
+                <span style="font-size:12px; color:#999; font-weight:normal;">高压 / 低压</span>
+            </div>
+            <div id="bpChart" class="chart-box"></div>
+        </div>
+    </div>
+
+    <div class="layui-col-md6">
+        <div class="chart-container">
+            <div class="chart-title title-fetal">
+                <span>👣 胎动次数 (12小时)</span>
+            </div>
+            <div id="fetalChart" class="chart-box"></div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.staticfile.org/layui/2.9.11/layui.js"></script>
+<script src="https://cdn.staticfile.org/axios/1.6.8/axios.min.js"></script>
+<script src="https://cdn.staticfile.org/echarts/5.4.3/echarts.min.js"></script>
+
+<script>
+    var user = JSON.parse(localStorage.getItem('user'));
+    if(!user) window.location.href = 'login.html';
+
+    layui.use(['layer'], function(){
+        var layer = layui.layer;
+
+        // 初始化5个图表
+        var weightChart = echarts.init(document.getElementById('weightChart'));
+        var moodChart   = echarts.init(document.getElementById('moodChart'));
+        var sugarChart  = echarts.init(document.getElementById('sugarChart'));
+        var bpChart     = echarts.init(document.getElementById('bpChart'));
+        var fetalChart  = echarts.init(document.getElementById('fetalChart'));
+
+        var charts = [weightChart, moodChart, sugarChart, bpChart, fetalChart];
+        charts.forEach(c => c.showLoading());
+
+        axios.get('http://localhost:8080/api/record/list?userId=' + user.userId)
+            .then(res => {
+                charts.forEach(c => c.hideLoading());
+
+                if(res.data.code === 200) {
+                    var list = res.data.data;
+                    if(list.length === 0) {
+                        layer.msg('暂无数据，请先去打卡', {offset: 't'});
+                        return;
+                    }
+
+                    // 数据预处理
+                    var dates = list.map(item => item.recordDate);
+                    var weights = list.map(item => item.weight);
+                    var sugars = list.map(item => item.bloodSugar);
+                    var highs = list.map(item => item.bloodPressureHigh);
+                    var lows = list.map(item => item.bloodPressureLow);
+                    var fetals = list.map(item => item.fetalMovement);
+
+                    // 统计心情
+                    var moodMap = {};
+                    list.forEach(item => {
+                        if(item.feeling) moodMap[item.feeling] = (moodMap[item.feeling] || 0) + 1;
+                    });
+                    var moodData = Object.keys(moodMap).map(key => { return {name: key, value: moodMap[key]} });
+
+                    // --- 1. 体重 (粉色面积图) ---
+                    weightChart.setOption({
+                        tooltip: { trigger: 'axis' },
+                        grid: { left: '10%', right: '5%', bottom: '10%', top: '10%' },
+                        xAxis: { type: 'category', boundaryGap: false, data: dates },
+                        yAxis: { type: 'value', scale: true },
+                        series: [{
+                            name: '体重', type: 'line', smooth: true, data: weights,
+                            itemStyle: { color: '#ff5ca0' },
+                            areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1, [{offset:0, color:'rgba(255,92,160,0.5)'}, {offset:1, color:'rgba(255,92,160,0.01)'}]) }
+                        }]
+                    });
+
+                    // --- 2. 心情 (C位 甜甜圈图) ---
+                    moodChart.setOption({
+                        tooltip: { trigger: 'item' },
+                        legend: { bottom: '0%' },
+                        color: ['#ff7675', '#ffeaa7', '#55efc4', '#74b9ff'], // 马卡龙色系
+                        series: [{
+                            name: '心情', type: 'pie', radius: ['40%', '65%'], // 甜甜圈效果
+                            avoidLabelOverlap: false,
+                            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+                            label: { show: true, position: 'outside' },
+                            labelLine: { show: true },
+                            data: moodData
+                        }]
+                    });
+
+                    // --- 3. 血糖 (橙色折线) ---
+                    sugarChart.setOption({
+                        tooltip: { trigger: 'axis' },
+                        grid: { left: '10%', right: '5%', bottom: '10%', top: '10%' },
+                        xAxis: { type: 'category', data: dates },
+                        yAxis: { type: 'value', scale: true },
+                        series: [{
+                            name: '血糖', type: 'line', data: sugars,
+                            lineStyle: { width: 3 },
+                            itemStyle: { color: '#ff9f43' },
+                            markLine: { data: [{ yAxis: 7.8, name: '警戒线' }], lineStyle: {color: '#ff4d4f', type: 'dashed'} }
+                        }]
+                    });
+
+                    // --- 4. 血压 (双线图) ---
+                    bpChart.setOption({
+                        tooltip: { trigger: 'axis' },
+                        legend: { top: '0%' },
+                        grid: { left: '5%', right: '5%', bottom: '5%', containLabel: true },
+                        xAxis: { type: 'category', boundaryGap: false, data: dates },
+                        yAxis: { type: 'value', scale: true },
+                        series: [
+                            { name: '高压', type: 'line', data: highs, itemStyle: {color: '#36a2eb'} },
+                            { name: '低压', type: 'line', data: lows, itemStyle: {color: '#4bc0c0'} }
+                        ]
+                    });
+
+                    // --- 5. 胎动 (紫色柱状) ---
+                    fetalChart.setOption({
+                        tooltip: { trigger: 'axis' },
+                        grid: { left: '5%', right: '5%', bottom: '5%', containLabel: true },
+                        xAxis: { type: 'category', data: dates },
+                        yAxis: { type: 'value' },
+                        series: [{
+                            name: '胎动', type: 'bar', data: fetals,
+                            itemStyle: { color: '#a18cd1', borderRadius: [5, 5, 0, 0] },
+                            barWidth: '40%'
+                        }]
+                    });
+                }
+            });
+
+        // 窗口缩放自适应
+        window.addEventListener('resize', function(){
+            charts.forEach(c => c.resize());
+        });
+    });
+</script>
+</body>
+</html>

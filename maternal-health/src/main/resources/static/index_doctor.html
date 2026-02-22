@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>医生工作台</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.11/css/layui.css">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        /* 医生端风格：专业医疗蓝 */
+        body .layui-layout-admin .layui-header { background-color: #009688; }
+        .layui-logo { background-color: #00796b !important; color: #fff !important; font-weight: bold; }
+        .layui-side { background-color: #fff; box-shadow: 2px 0 5px rgba(0,0,0,0.1); }
+
+        .layui-nav-tree .layui-nav-item a { color: #555; }
+        .layui-nav-tree .layui-nav-item a:hover { color: #009688; background-color: #f2f2f2; }
+        .layui-nav-tree .layui-this a { background-color: #009688 !important; color: #fff !important; }
+
+        .layui-body { background-color: #f2f7f8; padding: 20px; }
+
+        /* 数据卡片 */
+        .data-card {
+            background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex; align-items: center; transition: transform 0.3s;
+        }
+        .data-card:hover { transform: translateY(-5px); }
+        .card-icon {
+            width: 60px; height: 60px; border-radius: 50%; background: #e0f2f1; color: #009688;
+            font-size: 30px; display: flex; align-items: center; justify-content: center; margin-right: 15px;
+        }
+        .card-num { font-size: 28px; font-weight: bold; color: #333; }
+        .card-label { color: #999; font-size: 14px; }
+
+        .todo-panel { background: #fff; border-radius: 8px; padding: 20px; margin-top: 20px; }
+        .panel-title { font-size: 18px; font-weight: bold; border-left: 4px solid #009688; padding-left: 10px; margin-bottom: 15px; }
+    </style>
+</head>
+<body class="layui-layout-body">
+<div class="layui-layout layui-layout-admin">
+
+    <div class="layui-header">
+        <div class="layui-logo">医生工作台</div>
+        <ul class="layui-nav layui-layout-right">
+            <li class="layui-nav-item">
+                <a href="javascript:;">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3304/3304567.png" class="layui-nav-img">
+                    <span id="docName">医生</span>
+                </a>
+            </li>
+            <li class="layui-nav-item"><a href="javascript:;" onclick="logout()">退出</a></li>
+        </ul>
+    </div>
+
+    <div class="layui-side">
+        <div class="layui-side-scroll">
+            <ul class="layui-nav layui-nav-tree">
+                <li class="layui-nav-item layui-this"><a href="javascript:;"><i class="fa fa-envelope-open-o fa-fw"></i> 用户反馈处理</a></li>
+                <li class="layui-nav-item">
+                    <a href="javascript:;" onclick="document.getElementById('consultTable').parentElement.style.display='none'; location.href='doctor_schedule.html'">
+                        <i class="fa fa-user-md fa-fw"></i> 我的排班
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="layui-body">
+
+        <div class="layui-row layui-col-space20">
+            <div class="layui-col-md4">
+                <div class="data-card">
+                    <div class="card-icon"><i class="fa fa-commenting-o"></i></div>
+                    <div>
+                        <div class="card-num" id="todoNum">--</div>
+                        <div class="card-label">待处理反馈</div>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md4">
+                <div class="data-card">
+                    <div class="card-icon" style="background:#e3f2fd; color:#2196f3;"><i class="fa fa-check-square-o"></i></div>
+                    <div>
+                        <div class="card-num" id="doneNum">--</div>
+                        <div class="card-label">累计已回复</div>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md4">
+                <div class="data-card">
+                    <div class="card-icon" style="background:#ffebee; color:#f44336;"><i class="fa fa-warning"></i></div>
+                    <div>
+                        <div class="card-num" id="riskNum">--</div>
+                        <div class="card-label">重点关注 (高频词)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="todo-panel">
+            <div class="panel-title">
+                <span>用户反馈列表</span>
+                <button class="layui-btn layui-btn-sm layui-btn-primary" style="float:right;" onclick="reloadTable()"><i class="fa fa-refresh"></i> 刷新</button>
+            </div>
+            <table id="consultTable" lay-filter="consultTable"></table>
+        </div>
+
+    </div>
+</div>
+
+<div id="replyForm" style="display: none; padding: 20px;">
+    <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+        <h3 id="qTitle" style="font-weight:bold; color:#333; margin-bottom:5px;"></h3>
+        <div style="font-size:12px; color:#999; margin-bottom:5px;">
+            用户：<span id="qUser"></span> | 电话：<span id="qPhone"></span>
+        </div>
+        <p id="qDesc" style="color:#666;"></p>
+    </div>
+    <form class="layui-form">
+        <div class="layui-form-item">
+            <textarea name="replyContent" required lay-verify="required" placeholder="请输入专业的回复建议..." class="layui-textarea" style="height: 150px;"></textarea>
+        </div>
+        <div class="layui-form-item" style="text-align: right;">
+            <button class="layui-btn layui-bg-green" lay-submit lay-filter="submitReply">发送回复</button>
+        </div>
+    </form>
+</div>
+
+<script type="text/html" id="statusTpl">
+    {{#  if(d.status == 0){ }}
+    <span class="layui-badge">待处理</span>
+    {{# if(d.doctorId){ }} <span class="layui-badge layui-bg-orange">指定我</span> {{# } }}
+    {{#  } else { }}
+    <span class="layui-badge layui-bg-green">已回复</span>
+    {{#  } }}
+</script>
+
+<script type="text/html" id="toolBar">
+    {{#  if(d.status == 0){ }}
+    <a class="layui-btn layui-btn-xs" lay-event="reply">回复</a>
+    {{#  } else { }}
+    <a class="layui-btn layui-btn-xs layui-btn-primary" lay-event="view">查看详情</a>
+    {{#  } }}
+</script>
+
+<script src="https://cdn.staticfile.org/layui/2.9.11/layui.js"></script>
+<script src="https://cdn.staticfile.org/axios/1.6.8/axios.min.js"></script>
+<script>
+    var user = JSON.parse(localStorage.getItem('user'));
+    if(!user || user.role !== 1) {
+        alert('请登录医生账号');
+        window.location.href = 'login.html';
+    }
+    document.getElementById('docName').innerText = user.realName;
+
+    function logout() {
+        localStorage.removeItem('user');
+        window.location.href = 'login.html';
+    }
+
+    var tableIns;
+
+    layui.use(['table', 'layer', 'form'], function(){
+        var table = layui.table;
+        var layer = layui.layer;
+        var form = layui.form;
+        var $ = layui.$;
+
+        // 1. 加载统计数据
+        function loadStats() {
+            axios.get('http://localhost:8080/api/consult/doctor/stats?doctorId=' + user.userId)
+                .then(res => {
+                    var d = res.data.data;
+                    $('#todoNum').text(d.todo);
+                    $('#doneNum').text(d.done);
+                    $('#riskNum').text(d.risk);
+                });
+        }
+        loadStats();
+
+        // 2. 渲染表格 (带上 doctorId 参数)
+        tableIns = table.render({
+            elem: '#consultTable',
+            url: 'http://localhost:8080/api/consult/doctor/list?doctorId=' + user.userId,
+            cols: [[
+                {field: 'createTime', title: '提交时间', width: 170, sort: true, templet: function(d){ return d.createTime.replace('T',' ') }},
+                {field: 'realName', title: '孕妇姓名', width: 100},
+                {field: 'phone', title: '联系电话', width: 120}, // 增加电话列
+                {field: 'questionTitle', title: '问题标题', width: 250, style:'font-weight:bold; color:#009688;'},
+                {field: 'status', title: '状态', width: 120, templet: '#statusTpl', align:'center'},
+                {title: '操作', width: 150, toolbar: '#toolBar', align:'center'}
+            ]],
+            page: true
+        });
+
+        window.reloadTable = function() {
+            tableIns.reload();
+            loadStats(); // 刷新时同时也刷新统计
+        }
+
+        // 3. 工具条逻辑
+        table.on('tool(consultTable)', function(obj){
+            var data = obj.data;
+            if(obj.event === 'reply'){
+                $('#qTitle').text('❓ ' + data.questionTitle);
+                $('#qDesc').text(data.questionDesc || '（无详细描述）');
+                $('#qUser').text(data.realName);
+                $('#qPhone').text(data.phone);
+
+                layer.open({
+                    type: 1, title: '回复反馈', area: ['600px', '500px'], content: $('#replyForm'),
+                    success: function(layero, index){
+                        form.on('submit(submitReply)', function(formData){
+                            var loading = layer.load();
+                            axios.post('http://localhost:8080/api/consult/reply', {
+                                orderId: data.orderId,
+                                replyContent: formData.field.replyContent,
+                                doctorId: user.userId,
+                                doctorName: user.realName
+                            }).then(res => {
+                                layer.close(loading);
+                                if(res.data.code === 200){
+                                    layer.close(index);
+                                    layer.msg('回复成功', {icon: 1});
+                                    reloadTable();
+                                }
+                            });
+                            return false;
+                        });
+                    }
+                });
+            } else if(obj.event === 'view'){
+                // 显示谁回复的
+                var replyMsg = `<div style="padding:20px; line-height:1.8;">
+                    <p><strong>问题：</strong>${data.questionTitle}</p>
+                    <p><strong>描述：</strong>${data.questionDesc}</p>
+                    <hr>
+                    <p style="color:#009688;"><strong><i class="fa fa-user-md"></i> ${data.doctorName || '医生'} 回复：</strong></p>
+                    <p>${data.replyContent}</p>
+                    <p style="color:#999; font-size:12px; text-align:right;">回复时间：${data.replyTime ? data.replyTime.replace('T',' ') : '--'}</p>
+                </div>`;
+                layer.open({ type: 1, title: '反馈详情', area: ['500px', '400px'], content: replyMsg, shadeClose: true });
+            }
+        });
+    });
+</script>
+</body>
+</html>

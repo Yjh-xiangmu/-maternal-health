@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>系统管理后台</title>
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.11/css/layui.css">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        /* 覆盖 LayUI 默认样式，打造科技感后台 */
+        .layui-layout-admin .layui-header {
+            background-color: #242f42; /* 深蓝灰背景 */
+            border-bottom: 1px solid #1a222e;
+        }
+        .layui-layout-admin .layui-logo {
+            background-color: #1a222e !important;
+            color: #fff !important;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: none !important;
+        }
+        .layui-layout-admin .layui-side {
+            background-color: #2f4056; /* 侧边栏深色 */
+        }
+
+        /* 侧边栏菜单 */
+        .layui-nav-tree .layui-nav-item a { color: #bfcbd9 !important; border-left: 3px solid transparent; }
+        .layui-nav-tree .layui-nav-item a:hover { color: #fff !important; background-color: #1a222e; }
+        .layui-nav-tree .layui-this a {
+            background-color: #1890ff !important;
+            color: #fff !important;
+            border-left: 3px solid #69c0ff;
+        }
+
+        /* 顶部右侧 */
+        .layui-nav .layui-nav-item { line-height: 60px; }
+        .header-btn {
+            color: rgba(255,255,255,0.7);
+            padding: 0 15px;
+            cursor: pointer;
+            transition: color 0.3s;
+            text-decoration: none;
+        }
+        .header-btn:hover { color: #fff; }
+
+        /* 内容区 */
+        .layui-body { background-color: #f0f2f5; bottom: 0; overflow: hidden; }
+        iframe { width: 100%; height: 100%; border: none; }
+    </style>
+</head>
+<body class="layui-layout-body">
+<div class="layui-layout layui-layout-admin">
+
+    <div class="layui-header">
+        <div class="layui-logo"><i class="fa fa-cogs"></i> 管理控制台</div>
+
+        <div style="float: right; display: flex; align-items: center; height: 60px; padding-right: 20px;">
+            <div style="margin-right: 20px; color: #fff; display: flex; align-items: center;">
+                <img src="https://cdn-icons-png.flaticon.com/512/2304/2304226.png" style="width: 32px; height: 32px; border-radius: 50%; margin-right: 10px; border: 2px solid rgba(255,255,255,0.2);">
+                <span id="adminName">系统管理员</span>
+            </div>
+
+            <a href="javascript:;" onclick="logout()" class="header-btn" title="退出登录">
+                <i class="fa fa-sign-out" style="font-size: 18px;"></i> 退出
+            </a>
+        </div>
+    </div>
+
+    <div class="layui-side">
+        <div class="layui-side-scroll">
+            <ul class="layui-nav layui-nav-tree">
+                <li class="layui-nav-item layui-this">
+                    <a href="javascript:;" onclick="switchPage('admin_welcome.html')"><i class="fa fa-dashboard fa-fw"></i> 后台首页</a>
+                </li>
+                <li class="layui-nav-item">
+                    <a href="javascript:;" onclick="switchPage('admin_user.html')"><i class="fa fa-users fa-fw"></i> 孕妇用户管理</a>
+                </li>
+                <li class="layui-nav-item">
+                    <a href="javascript:;" onclick="switchPage('admin_doctor.html')"><i class="fa fa-user-md fa-fw"></i> 医生人员管理</a>
+                </li>
+                <li class="layui-nav-item">
+                    <a href="javascript:;" onclick="switchPage('admin_product.html')"><i class="fa fa-shopping-cart fa-fw"></i> 商城商品管理</a>
+                </li>
+                <li class="layui-nav-item">
+                    <a href="javascript:;" onclick="switchPage('admin_order.html')"><i class="fa fa-truck fa-fw"></i> 订单配送管理</a>
+                </li>
+                <li class="layui-nav-item">
+                    <a href="javascript:;" onclick="switchPage('admin_knowledge.html')">
+                        <i class="fa fa-book fa-fw"></i> 知识库管理
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="layui-body">
+        <iframe id="mainFrame" src="admin_welcome.html"></iframe>
+    </div>
+</div>
+
+<script src="https://cdn.staticfile.org/layui/2.9.11/layui.js"></script>
+<script>
+    layui.use(['element', 'layer'], function(){
+        var element = layui.element;
+        var layer = layui.layer;
+
+        // 简单的登录校验
+        var userStr = localStorage.getItem('user');
+        if(!userStr) {
+            window.location.href = 'login.html';
+        } else {
+            var user = JSON.parse(userStr);
+            if(user.role !== 2) {
+                // 如果不是管理员强行进来的，踢出去
+                layer.alert('权限不足，非管理员无法访问', function(){
+                    window.location.href = 'login.html';
+                });
+            }
+            if(user.realName) {
+                document.getElementById('adminName').innerText = user.realName;
+            }
+        }
+    });
+
+    // 切换右侧页面
+    function switchPage(url) {
+        document.getElementById('mainFrame').src = url;
+    }
+
+    // 退出登录
+    function logout() {
+        layui.layer.confirm('确定要退出管理系统吗？', {icon: 3, title:'提示'}, function(index){
+            localStorage.removeItem('user'); // 清除本地缓存
+            window.location.href = 'login.html'; // 跳回登录页
+            layui.layer.close(index);
+        });
+    }
+</script>
+</body>
+</html>

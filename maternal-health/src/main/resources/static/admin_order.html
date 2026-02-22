@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>订单管理</title>
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.11/css/layui.css">
+    <style>
+        body { padding: 15px; }
+        .thumb-img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="layui-card">
+    <div class="layui-card-body">
+        <div class="layui-form layui-row layui-col-space15">
+            <div class="layui-col-md3">
+                <input type="text" id="keyword" placeholder="搜索订单号" class="layui-input">
+            </div>
+            <div class="layui-col-md2">
+                <select id="statusSelect">
+                    <option value="">全部状态</option>
+                    <option value="0">待支付</option>
+                    <option value="1">待发货</option>
+                    <option value="2">已发货</option>
+                    <option value="3">交易完成</option> </select>
+            </div>
+            <div class="layui-col-md2">
+                <button class="layui-btn layui-btn-normal" id="searchBtn">查询</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<table id="orderTable" lay-filter="orderTable"></table>
+
+<script type="text/html" id="imgTpl">
+    <img src="{{d.productImg || 'https://cdn-icons-png.flaticon.com/512/1554/1554591.png'}}" class="thumb-img" onclick="window.open(this.src)">
+</script>
+
+<script type="text/html" id="statusTpl">
+    {{#  if(d.status == 0){ }}
+    <span class="layui-badge layui-bg-orange">待支付</span>
+    {{#  } else if(d.status == 1){ }}
+    <span class="layui-badge layui-bg-green">待发货</span>
+    {{#  } else if(d.status == 2){ }}
+    <span class="layui-badge layui-bg-blue">已发货</span>
+    {{#  } else if(d.status == 3){ }}
+    <span class="layui-badge layui-bg-gray">已完成</span> {{#  } }}
+</script>
+
+<script type="text/html" id="toolBar">
+    {{#  if(d.status == 1){ }}
+    <a class="layui-btn layui-btn-xs" lay-event="send">立即发货</a>
+    {{#  } else { }}
+    <span style="color:#ccc; font-size:12px;">--</span>
+    {{#  } }}
+</script>
+
+<script src="https://cdn.staticfile.org/layui/2.9.11/layui.js"></script>
+<script src="https://cdn.staticfile.org/axios/1.6.8/axios.min.js"></script>
+
+<script>
+    layui.use(['table', 'layer', 'form'], function(){
+        var table = layui.table;
+        var layer = layui.layer;
+        var $ = layui.$;
+
+        var tableIns = table.render({
+            elem: '#orderTable',
+            url: 'http://localhost:8080/api/order/admin/list',
+            cols: [[
+                {field: 'orderNo', title: '订单编号', width: 180, sort: true},
+                {field: 'productImg', title: '商品', width: 60, templet: '#imgTpl', align:'center'},
+                {field: 'productName', title: '商品名称', width: 150},
+                {field: 'price', title: '金额', width: 100, style:'color:#ff5722; font-weight:bold;'},
+                {field: 'userId', title: '买家ID', width: 80},
+                {field: 'createTime', title: '下单时间', width: 160, templet: function(d){ return d.createTime.replace('T',' ') }},
+                {field: 'status', title: '状态', width: 100, templet: '#statusTpl', align:'center'},
+                {title: '操作', width: 100, toolbar: '#toolBar', align:'center'}
+            ]],
+            page: true
+        });
+
+        $('#searchBtn').click(function(){
+            var key = $('#keyword').val();
+            var status = $('#statusSelect').val();
+            tableIns.reload({
+                where: { orderNo: key, status: status },
+                page: { curr: 1 }
+            });
+        });
+
+        table.on('tool(orderTable)', function(obj){
+            var data = obj.data;
+            if(obj.event === 'send'){
+                layer.confirm('确定发货？', {icon: 3}, function(index){
+                    var loading = layer.load();
+                    axios.post('http://localhost:8080/api/order/delivery', {orderId: data.orderId})
+                        .then(res => {
+                            layer.close(loading);
+                            if(res.data.code === 200){
+                                layer.msg('发货成功', {icon: 1});
+                                tableIns.reload();
+                            }
+                        });
+                    layer.close(index);
+                });
+            }
+        });
+    });
+</script>
+</body>
+</html>

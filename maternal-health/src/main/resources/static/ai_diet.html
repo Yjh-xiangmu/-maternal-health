@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>AI 孕期营养师 - 智能食谱</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.11/css/layui.css">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body {
+            background: linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%);
+            min-height: 100vh;
+            padding: 20px;
+            font-family: "Microsoft YaHei", sans-serif;
+            padding-bottom: 80px;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+
+        .main-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+
+        .header-title { text-align: center; margin-bottom: 30px; }
+        .header-title h2 { font-weight: bold; font-size: 28px; color: #6a11cb; }
+
+        /* 修改后的文案样式 */
+        .header-title p { color: #666; margin-top: 10px; letter-spacing: 1px; }
+
+        .tag-group { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dashed #eee; }
+        .tag-title { font-weight: bold; margin-bottom: 15px; display: block; color: #444; font-size: 16px; }
+
+        .check-box-wrapper { display: inline-block; }
+        .check-box-wrapper input { display: none; }
+
+        .check-box-label {
+            display: inline-block; margin-right: 10px; margin-bottom: 10px; padding: 8px 15px;
+            background: #f5f5f7; border-radius: 50px; color: #666; transition: all 0.2s;
+            border: 1px solid transparent; font-size: 14px; cursor: pointer; user-select: none;
+        }
+        .check-box-wrapper input:checked + .check-box-label {
+            background: #e0c3fc; color: #6a11cb; border-color: #6a11cb; font-weight: bold;
+            box-shadow: 0 2px 8px rgba(106, 17, 203, 0.15);
+        }
+
+        .generate-btn {
+            background: linear-gradient(to right, #6a11cb, #2575fc); border: none; height: 50px;
+            font-size: 18px; border-radius: 25px; box-shadow: 0 8px 20px rgba(37, 117, 252, 0.4);
+            transition: transform 0.2s; margin-top: 10px; width: 100%; color: white; cursor: pointer;
+        }
+        .generate-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+
+        .result-box {
+            margin-top: 30px; padding: 25px; background: #fdfbff; border-radius: 15px;
+            border: 2px solid #e0c3fc; display: none; position: relative;
+        }
+
+        .date-badge {
+            background: #ff5ca0; color: white; padding: 5px 12px; border-radius: 4px;
+            font-size: 12px; position: absolute; top: 0; right: 0; border-bottom-left-radius: 10px;
+        }
+
+        .other-input {
+            width: 200px; border: none; border-bottom: 2px solid #ddd; padding: 5px;
+            outline: none; color: #6a11cb; background: transparent;
+        }
+        .other-input:focus { border-bottom-color: #6a11cb; }
+
+        .result-content h3 { color: #6a11cb; margin-top: 20px; font-weight: bold; }
+        .result-content ul { padding-left: 20px; margin: 10px 0; }
+        .result-content li { margin-bottom: 8px; color: #333; }
+        .result-content strong { color: #e91e63; background: #fff0f5; padding: 2px 5px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="main-card">
+        <a href="index_pregnant.html" class="layui-btn layui-btn-primary layui-btn-sm layui-border-blue" style="border-radius: 20px; margin-bottom: 10px;">
+            <i class="fa fa-arrow-left"></i> 返回首页
+        </a>
+
+        <div class="header-title">
+            <h2><i class="fa fa-cutlery"></i> AI 智能营养师</h2>
+            <p>基于医学知识库与智能算法，自动为您生成今日专属食谱</p>
+        </div>
+
+        <div id="dietForm">
+            <div class="tag-group">
+                <span class="tag-title">🏥 1. 身体状况 (多选)：</span>
+                <label class="check-box-wrapper"><input type="checkbox" name="condition" value="妊娠糖尿病"><span class="check-box-label">妊娠糖尿病</span></label>
+                <label class="check-box-wrapper"><input type="checkbox" name="condition" value="高血压"><span class="check-box-label">高血压</span></label>
+                <label class="check-box-wrapper"><input type="checkbox" name="condition" value="贫血"><span class="check-box-label">贫血</span></label>
+                <label class="check-box-wrapper"><input type="checkbox" name="condition" value="便秘"><span class="check-box-label">便秘</span></label>
+                <label class="check-box-wrapper"><input type="checkbox" name="condition" value="孕吐严重"><span class="check-box-label">孕吐严重</span></label>
+                <label class="check-box-wrapper"><input type="checkbox" name="condition" value="体重增长过快"><span class="check-box-label">体重增长过快</span></label>
+                <div style="margin-top: 10px;">
+                    <input type="text" id="otherCondition" class="other-input" placeholder="其他状况，如：芒果过敏...">
+                </div>
+            </div>
+
+            <div class="tag-group" style="border-bottom: none;">
+                <span class="tag-title">🥕 2. 饮食偏好 (多选)：</span>
+                <label class="check-box-wrapper"><input type="checkbox" name="pref" value="中式家常" checked><span class="check-box-label">中式家常</span></label>
+                <label class="check-box-wrapper"><input type="checkbox" name="pref" value="清淡口味"><span class="check-box-label">清淡口味</span></label>
+                <label class="check-box-wrapper"><input type="checkbox" name="pref" value="爱吃面食"><span class="check-box-label">爱吃面食</span></label>
+                <label class="check-box-wrapper"><input type="checkbox" name="pref" value="无辣不欢"><span class="check-box-label">无辣不欢</span></label>
+                <div style="margin-top: 10px;">
+                    <input type="text" id="otherPref" class="other-input" placeholder="其他偏好，如：不吃香菜...">
+                </div>
+            </div>
+
+            <button type="button" class="generate-btn" id="createPlanBtn">
+                <i class="fa fa-magic"></i> 读取档案并生成食谱
+            </button>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <div class="date-badge" id="planDateBadge"></div>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h3 style="color:#6a11cb; font-weight:bold;">🥗 您的专属营养方案</h3>
+            </div>
+            <div class="result-content" id="markdownContent"></div>
+            <div style="text-align: right; margin-top: 20px; border-top: 1px dashed #ddd; padding-top: 10px;">
+                <button class="layui-btn layui-btn-primary layui-btn-sm" onclick="window.print()">
+                    <i class="fa fa-print"></i> 打印
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.staticfile.org/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdn.staticfile.org/layui/2.9.11/layui.js"></script>
+<script src="https://cdn.staticfile.org/axios/1.6.8/axios.min.js"></script>
+<script src="https://cdn.staticfile.org/marked/9.1.2/marked.min.js"></script>
+
+<script>
+    const API_URL = 'http://localhost:8080/api/ai/chat';
+    var user = JSON.parse(localStorage.getItem('user'));
+    if(!user) window.location.href = 'login.html';
+
+    $(document).ready(function(){
+        loadSavedPlan();
+    });
+
+    function loadSavedPlan() {
+        var savedHtml = localStorage.getItem('diet_plan_content_' + user.userId);
+        var savedDate = localStorage.getItem('diet_plan_date_' + user.userId);
+
+        if(savedHtml && savedDate) {
+            $('#markdownContent').html(savedHtml);
+            $('#planDateBadge').text('生成日期: ' + savedDate);
+            $('#resultBox').fadeIn();
+        }
+    }
+
+    layui.use(['layer'], function(){
+        var layer = layui.layer;
+
+        $('#createPlanBtn').click(function(){
+            // 1. 第一步：先去后端查档案 (获取孕周)
+            var loading = layer.msg('正在读取您的孕期档案...', {icon: 16, shade: 0.3, time: 60000});
+
+            axios.get('http://localhost:8080/api/profile/info?userId=' + user.userId)
+                .then(resProfile => {
+                    var profile = resProfile.data.data.profile;
+
+                    // 如果没填档案，强制跳转
+                    if(!profile || !profile.lmpDate) {
+                        layer.close(loading);
+                        layer.confirm('检测到您尚未完善孕期档案（无法计算孕周），请先去完善信息。', {
+                            icon: 7, title: '档案缺失'
+                        }, function(){
+                            window.location.href = 'profile.html';
+                        });
+                        return;
+                    }
+
+                    // 计算孕周逻辑 (和首页保持一致)
+                    var lmp = new Date(profile.lmpDate);
+                    var today = new Date();
+                    var diffTime = Math.abs(today - lmp);
+                    var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    var weeks = Math.floor(diffDays / 7);
+                    var stage = "";
+
+                    if(weeks < 13) stage = "孕早期(" + weeks + "周)";
+                    else if(weeks < 28) stage = "孕中期(" + weeks + "周)";
+                    else stage = "孕晚期(" + weeks + "周)";
+
+                    layer.msg('档案读取成功：' + stage + '，正在生成食谱...', {icon: 16, shade: 0.3, time: 60000});
+
+                    // 2. 第二步：收集页面上的勾选 (身体状况/偏好)
+                    var conditions = [];
+                    $('input[name="condition"]:checked').each(function(){ conditions.push($(this).val()); });
+                    var otherCond = $('#otherCondition').val().trim();
+                    if(otherCond) conditions.push(otherCond);
+                    var conditionStr = conditions.length > 0 ? conditions.join("、") : "无特殊状况";
+
+                    var prefs = [];
+                    $('input[name="pref"]:checked').each(function(){ prefs.push($(this).val()); });
+                    var otherPref = $('#otherPref').val().trim();
+                    if(otherPref) prefs.push(otherPref);
+                    var prefStr = prefs.length > 0 ? prefs.join("、") : "无特殊偏好";
+
+                    // 3. 第三步：构建更智能的 Prompt
+                    var prompt = `我是一名孕妇，根据档案显示，我目前处于【${stage}】。
+我的身体状况及需求是：【${conditionStr}】。
+我的饮食偏好是：【${prefStr}】。
+请为我设计一份【今天的早、中、晚三餐及加餐】的食谱。
+要求：
+1. 严格匹配我的孕周营养需求（例如孕晚期控制体重、孕早期补充叶酸等）。
+2. 必须考虑我的身体状况禁忌。
+3. 格式要求：使用Markdown列表。
+4. 语气温馨，不要出现机械感。`;
+
+                    // 4. 第四步：发送给 AI
+                    axios.post(API_URL, {
+                        userId: user.userId,
+                        message: prompt
+                    })
+                        .then(res => {
+                            layer.closeAll(); // 关闭loading
+
+                            var html = marked.parse(res.data.reply);
+                            var now = new Date();
+                            var dateStr = now.getFullYear() + '/' + (now.getMonth()+1) + '/' + now.getDate();
+
+                            $('#markdownContent').html(html);
+                            $('#planDateBadge').text('生成日期: ' + dateStr);
+                            $('#resultBox').slideDown();
+
+                            localStorage.setItem('diet_plan_content_' + user.userId, html);
+                            localStorage.setItem('diet_plan_date_' + user.userId, dateStr);
+
+                            $('html, body').animate({ scrollTop: $("#resultBox").offset().top }, 500);
+                        })
+                        .catch(err => {
+                            layer.closeAll();
+                            layer.alert('生成失败，请检查网络', {icon: 2});
+                        });
+                })
+                .catch(err => {
+                    layer.closeAll();
+                    layer.alert('获取档案失败，请重试', {icon: 2});
+                });
+        });
+    });
+</script>
+
+</body>
+</html>

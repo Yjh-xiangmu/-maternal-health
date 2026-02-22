@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>注册 - 孕产妇健康管理系统</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.11/css/layui.css">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <style>
+        body {
+            background: linear-gradient(120deg, #fccb90 0%, #d57eeb 100%); /* 温暖的橙紫渐变 */
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        .reg-card {
+            width: 420px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 1s;
+        }
+
+        .reg-title {
+            text-align: center;
+            color: #9c27b0;
+            font-size: 24px;
+            margin-bottom: 25px;
+            font-weight: bold;
+        }
+
+        .layui-input {
+            height: 45px;
+            border-radius: 25px;
+            border: 1px solid #eee;
+            background: #f9f9f9;
+            padding-left: 40px;
+        }
+        .layui-input:focus { border-color: #d57eeb; background: #fff; }
+
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            top: 13px;
+            color: #aaa;
+            font-size: 16px;
+            z-index: 10;
+        }
+
+        .reg-btn {
+            height: 45px;
+            border-radius: 25px;
+            background: linear-gradient(to right, #d57eeb, #9c27b0);
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(156, 39, 176, 0.3);
+            margin-top: 10px;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+<div class="reg-card">
+    <h2 class="reg-title">加入我们 🌸</h2>
+    <form class="layui-form">
+        <div class="layui-form-item" style="position: relative;">
+            <i class="fa fa-mobile input-icon" style="font-size: 24px; top: 10px;"></i>
+            <input type="text" name="username" required lay-verify="required|phone" placeholder="手机号" class="layui-input">
+        </div>
+
+        <div class="layui-form-item" style="position: relative;">
+            <i class="fa fa-user-circle-o input-icon"></i>
+            <input type="text" name="realName" required lay-verify="required" placeholder="真实姓名" class="layui-input">
+        </div>
+
+        <div class="layui-form-item" style="position: relative;">
+            <i class="fa fa-key input-icon"></i>
+            <input type="password" name="password" required lay-verify="required" placeholder="设置密码" class="layui-input">
+        </div>
+
+        <button class="layui-btn layui-btn-fluid reg-btn" lay-submit lay-filter="reg">立即注册</button>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="login.html" style="color: #666;">已有账号？<span style="color: #9c27b0;">返回登录</span></a>
+        </div>
+    </form>
+</div>
+
+<script src="https://cdn.staticfile.org/layui/2.9.11/layui.js"></script>
+<script src="https://cdn.staticfile.org/axios/1.6.8/axios.min.js"></script>
+<script>
+    layui.use(['form', 'layer'], function(){
+        var form = layui.form;
+        var layer = layui.layer;
+
+        form.on('submit(reg)', function(data){
+            var loading = layer.load(2);
+            axios.post('http://localhost:8080/api/auth/register', data.field)
+                .then(res => {
+                    layer.close(loading);
+                    if(res.data.code === 200){
+                        layer.msg('注册成功！', {icon: 1, time: 1500}, function(){
+                            window.location.href = 'login.html';
+                        });
+                    } else {
+                        layer.msg(res.data.msg || '注册失败', {icon: 2});
+                    }
+                })
+                .catch(err => {
+                    layer.close(loading);
+                    layer.msg('连接失败', {icon: 2});
+                });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

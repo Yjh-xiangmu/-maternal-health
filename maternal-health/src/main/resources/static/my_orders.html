@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>我的订单</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.11/css/layui.css">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body { background: #f7f8fa; padding: 20px; font-family: "Microsoft YaHei"; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .header { display: flex; align-items: center; margin-bottom: 20px; }
+
+        .order-card { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .card-top { display: flex; justify-content: space-between; color: #999; font-size: 13px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 15px; }
+
+        .card-main { display: flex; align-items: center; }
+        .prod-img { width: 80px; height: 80px; border-radius: 8px; background: #f0f0f0; object-fit: cover; }
+        .prod-info { flex: 1; margin-left: 15px; }
+        .prod-name { font-size: 16px; font-weight: bold; color: #333; }
+        .prod-price { color: #ff5722; font-weight: bold; font-size: 15px; margin-top: 5px; }
+
+        .order-status { font-size: 14px; font-weight: bold; text-align: right; min-width: 90px; }
+        .status-0 { color: #ffb800; } /* 待支付 */
+        .status-1 { color: #5fb878; } /* 待发货 */
+        .status-2 { color: #1e9fff; } /* 已发货 */
+        .status-3 { color: #999; }    /* 已完成 */
+
+        /* 按钮样式 */
+        .action-btn {
+            margin-top: 8px; display: inline-block; padding: 5px 15px;
+            border-radius: 20px; font-size: 12px; text-decoration: none; cursor: pointer;
+        }
+        .btn-pay { background: #ffb800; color: white; box-shadow: 0 2px 5px rgba(255, 184, 0, 0.3); }
+        .btn-receive { background: #1e9fff; color: white; box-shadow: 0 2px 5px rgba(30, 159, 255, 0.3); }
+        .btn-done { border: 1px solid #eee; color: #999; background: #f9f9f9; cursor: default; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <a href="index_pregnant.html" class="layui-btn layui-btn-sm layui-btn-primary" style="border-radius:15px; margin-right:15px;"><i class="fa fa-arrow-left"></i> 返回首页</a>
+        <h2 style="font-weight:bold; color:#333;">📦 我的订单</h2>
+    </div>
+
+    <div id="list">
+        <div style="text-align:center; padding:50px; color:#ccc;">
+            <i class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop" style="font-size: 30px;"></i>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.staticfile.org/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdn.staticfile.org/layui/2.9.11/layui.js"></script>
+<script src="https://cdn.staticfile.org/axios/1.6.8/axios.min.js"></script>
+<script>
+    var user = JSON.parse(localStorage.getItem('user'));
+    if(!user) window.location.href = 'login.html';
+
+    layui.use(['layer'], function(){
+        var layer = layui.layer;
+
+        // 加载订单列表
+        function loadOrders() {
+            axios.get('http://localhost:8080/api/order/my?userId=' + user.userId)
+                .then(res => {
+                    var list = res.data.data;
+                    var html = '';
+                    if(list.length === 0) {
+                        html = '<div style="text-align:center; padding:50px; color:#999;"><i class="fa fa-inbox" style="font-size:40px;"></i><p style="margin-top:10px;">暂无订单</p></div>';
+                    } else {
+                        list.forEach(item => {
+                            var img = item.productImg || 'https://cdn-icons-png.flaticon.com/512/1554/1554591.png';
+                            var statusHtml = '';
+
+                            // ★★★ 状态判断逻辑 ★★★
+                            if(item.status === 0) {
+                                statusHtml = `
+                                    <div class="order-status status-0">待支付</div>
+                                    <a href="pay.html?orderNo=${item.orderNo}&price=${item.price}" class="action-btn btn-pay">去付款</a>
+                                `;
+                            } else if(item.status === 1) {
+                                statusHtml = `
+                                    <div class="order-status status-1"><i class="fa fa-clock-o"></i> 待发货</div>
+                                `;
+                            } else if(item.status === 2) {
+                                // 新增：确认收货按钮
+                                statusHtml = `
+                                    <div class="order-status status-2"><i class="fa fa-truck"></i> 运输中</div>
+                                    <div class="action-btn btn-receive" onclick="confirmReceive(${item.orderId})">确认收货</div>
+                                `;
+                            } else if(item.status === 3) {
+                                // 新增：已完成状态
+                                statusHtml = `
+                                    <div class="order-status status-3"><i class="fa fa-check-square"></i> 交易成功</div>
+                                `;
+                            }
+
+                            html += `
+                            <div class="order-card">
+                                <div class="card-top">
+                                    <span>订单号：${item.orderNo}</span>
+                                    <span>${item.createTime.replace('T',' ')}</span>
+                                </div>
+                                <div class="card-main">
+                                    <img src="${img}" class="prod-img">
+                                    <div class="prod-info">
+                                        <div class="prod-name">${item.productName}</div>
+                                        <div class="prod-price">¥ ${item.price}</div>
+                                    </div>
+                                    <div style="text-align:right;">
+                                        ${statusHtml}
+                                    </div>
+                                </div>
+                            </div>`;
+                        });
+                    }
+                    $('#list').html(html);
+                });
+        }
+
+        loadOrders(); // 初始加载
+
+        // 确认收货逻辑
+        window.confirmReceive = function(orderId) {
+            layer.confirm('确认您已收到商品且无质量问题吗？', {icon: 3, title:'收货确认'}, function(index){
+                var loading = layer.load(2);
+                axios.post('http://localhost:8080/api/order/receive', {orderId: orderId})
+                    .then(res => {
+                        layer.close(loading);
+                        if(res.data.code === 200) {
+                            layer.msg('交易完成！', {icon: 1});
+                            loadOrders(); // 刷新列表
+                        }
+                    });
+                layer.close(index);
+            });
+        }
+    });
+</script>
+</body>
+</html>

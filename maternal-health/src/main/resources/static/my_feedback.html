@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>我的反馈记录</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.11/css/layui.css">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body { background: #f7f8fa; padding: 20px; }
+        .header-card {
+            background: #fff; padding: 20px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+        }
+        .feed-item {
+            background: #fff; padding: 20px; border-radius: 10px; margin-bottom: 15px; border-left: 5px solid #ccc;
+        }
+        .feed-item.done { border-left-color: #4caf50; } /* 已回复是绿色 */
+        .feed-item.wait { border-left-color: #ff9800; } /* 待回复是橙色 */
+
+        .feed-title { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 10px; }
+        .feed-time { color: #999; font-size: 12px; float: right; }
+        .feed-desc { color: #666; font-size: 14px; background: #f9f9f9; padding: 10px; border-radius: 5px; }
+
+        .reply-box { margin-top: 15px; border-top: 1px dashed #eee; padding-top: 10px; }
+        .doc-name { color: #009688; font-weight: bold; font-size: 14px; }
+        .reply-content { color: #333; margin-top: 5px; font-size: 14px; line-height: 1.6; }
+    </style>
+</head>
+<body>
+
+<div style="max-width: 800px; margin: 0 auto;">
+    <div class="header-card">
+        <h2 style="font-weight: bold;">📬 我的反馈记录</h2>
+        <a href="index_pregnant.html" class="layui-btn layui-btn-sm layui-btn-primary" style="border-radius:15px;">返回首页</a>
+    </div>
+
+    <div id="listContainer">
+        <div style="text-align:center; padding:30px; color:#999;">加载中...</div>
+    </div>
+</div>
+
+<script src="https://cdn.staticfile.org/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdn.staticfile.org/axios/1.6.8/axios.min.js"></script>
+<script>
+    var user = JSON.parse(localStorage.getItem('user'));
+    if(!user) window.location.href = 'login.html';
+
+    axios.get('http://localhost:8080/api/consult/my?userId=' + user.userId)
+        .then(res => {
+            var list = res.data.data;
+            var html = '';
+
+            if(list.length === 0) {
+                html = '<div style="text-align:center; padding:50px; color:#ccc;"><i class="fa fa-inbox" style="font-size:40px;"></i><p>暂无反馈记录</p></div>';
+            } else {
+                list.forEach(item => {
+                    var statusClass = item.status === 1 ? 'done' : 'wait';
+                    var statusText = item.status === 1 ? '<span class="layui-badge layui-bg-green">已回复</span>' : '<span class="layui-badge layui-bg-orange">待处理</span>';
+
+                    var replyHtml = '';
+                    if(item.status === 1) {
+                        replyHtml = `
+                            <div class="reply-box">
+                                <div class="doc-name"><i class="fa fa-user-md"></i> ${item.doctorName || '医生'} 回复：</div>
+                                <div class="reply-content">${item.replyContent}</div>
+                                <div style="text-align:right; font-size:12px; color:#ccc; margin-top:5px;">${item.replyTime.replace('T',' ')}</div>
+                            </div>
+                        `;
+                    }
+
+                    html += `
+                        <div class="feed-item ${statusClass}">
+                            <div class="feed-title">
+                                ${statusText} ${item.questionTitle}
+                                <span class="feed-time">${item.createTime.replace('T',' ')}</span>
+                            </div>
+                            <div class="feed-desc">${item.questionDesc}</div>
+                            ${replyHtml}
+                        </div>
+                    `;
+                });
+            }
+            $('#listContainer').html(html);
+        });
+</script>
+</body>
+</html>

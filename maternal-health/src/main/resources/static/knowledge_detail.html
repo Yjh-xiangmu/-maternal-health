@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>文章详情</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.11/css/layui.css">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body { background-color: #fff; padding: 20px; font-family: "Microsoft YaHei"; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .title { font-size: 24px; font-weight: bold; color: #333; margin: 20px 0 10px; }
+        .meta { color: #999; font-size: 13px; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        .content { font-size: 16px; line-height: 1.8; color: #444; white-space: pre-wrap; /* 保留换行 */ }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="layui-btn layui-btn-primary layui-btn-sm layui-border-black" style="border-radius:15px;">
+        <i class="fa fa-arrow-left"></i> 返回列表
+    </a>
+
+    <div id="detailBox">
+        <h1 class="title" id="dTitle">加载中...</h1>
+        <div class="meta">
+            <span class="layui-badge layui-bg-blue" id="dCate">分类</span>
+            <span style="margin-left:10px;" id="dTime">--</span>
+            <span style="float:right;"><i class="fa fa-eye"></i> <span id="dView">0</span></span>
+        </div>
+        <div class="content" id="dContent"></div>
+    </div>
+</div>
+
+<script src="https://cdn.staticfile.org/axios/1.6.8/axios.min.js"></script>
+<script>
+    // 获取 URL 参数中的 id
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get('id');
+
+    if(id) {
+        axios.get('http://localhost:8080/api/knowledge/detail?id=' + id)
+            .then(res => {
+                var data = res.data.data;
+                if(data) {
+                    document.title = data.title;
+                    document.getElementById('dTitle').innerText = data.title;
+                    document.getElementById('dCate').innerText = data.category;
+                    document.getElementById('dTime').innerText = data.createTime.replace('T', ' ');
+                    document.getElementById('dView').innerText = data.viewCount;
+                    document.getElementById('dContent').innerText = data.content;
+                }
+            });
+    }
+</script>
+</body>
+</html>

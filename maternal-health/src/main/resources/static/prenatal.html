@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>产检时光轴</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.11/css/layui.css">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            padding: 20px;
+            font-family: "Microsoft YaHei";
+        }
+
+        /* 顶部卡片 */
+        .header-box {
+            background: #fff;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .header-title h2 { color: #333; font-weight: bold; font-size: 22px; }
+        .header-title p { color: #999; font-size: 13px; margin-top: 5px; }
+
+        .add-btn {
+            background: linear-gradient(to right, #43e97b, #38f9d7);
+            border: none;
+            color: #fff;
+            padding: 0 25px;
+            height: 40px;
+            line-height: 40px;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(67, 233, 123, 0.3);
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .add-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(67, 233, 123, 0.4); }
+
+        /* 时间轴样式重写 */
+        .layui-timeline-item { padding-bottom: 25px; }
+        .layui-timeline-axis {
+            background-color: #fff;
+            color: #43e97b;
+            font-size: 20px;
+            line-height: 20px;
+        }
+        .layui-timeline-item:hover .layui-timeline-axis { color: #ff5ca0; transform: scale(1.2); }
+
+        /* 内容卡片 */
+        .checkup-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.03);
+            position: relative;
+            border-left: 5px solid #43e97b;
+            transition: all 0.3s;
+        }
+        .checkup-card:hover { transform: translateX(5px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); border-left-color: #ff5ca0; }
+
+        .card-week { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 10px; }
+        .card-date { position: absolute; top: 20px; right: 20px; color: #999; font-size: 13px; }
+
+        .card-advice {
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 8px;
+            color: #666;
+            margin-top: 10px;
+            line-height: 1.6;
+        }
+        .next-date { margin-top: 10px; font-size: 13px; color: #ff5ca0; font-weight: bold; }
+        .next-date i { margin-right: 5px; }
+
+        /* 空状态 */
+        .empty-state { text-align: center; padding: 50px; color: #ccc; }
+        .empty-state i { font-size: 50px; margin-bottom: 15px; display: block; }
+
+        /* 弹窗样式微调 */
+        .layui-layer-content { padding: 20px !important; }
+    </style>
+</head>
+<body>
+
+<div style="max-width: 800px; margin: 0 auto;">
+
+    <div class="header-box">
+        <div class="header-title">
+            <h2>📅 产检时光轴</h2>
+            <p>记录每一次相遇，期待宝宝的到来</p>
+        </div>
+        <div>
+            <a href="index_pregnant.html" class="layui-btn layui-btn-primary layui-btn-sm layui-border-green" style="border-radius:15px; margin-right:10px;">返回</a>
+            <button class="add-btn" id="addBtn"><i class="fa fa-plus"></i> 新增产检</button>
+        </div>
+    </div>
+
+    <ul class="layui-timeline" id="timelineBox">
+    </ul>
+
+    <div id="emptyBox" class="empty-state" style="display:none;">
+        <i class="fa fa-folder-open-o"></i>
+        <p>还没有产检记录哦，点击右上角添加第一次产检吧！</p>
+    </div>
+
+</div>
+
+<div id="addForm" style="display: none;">
+    <form class="layui-form" style="margin-top: 10px;">
+        <div class="layui-form-item">
+            <label class="layui-form-label">产检日期</label>
+            <div class="layui-input-block">
+                <input type="text" name="checkDate" id="datePicker" required lay-verify="required" placeholder="请选择日期" class="layui-input" readonly>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">当前孕周</label>
+            <div class="layui-input-block">
+                <input type="number" name="weekNo" required lay-verify="required" placeholder="例如：12" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">医生医嘱</label>
+            <div class="layui-input-block">
+                <textarea name="doctorAdvice" placeholder="医生说了什么注意事项？" class="layui-textarea"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">下次预约</label>
+            <div class="layui-input-block">
+                <input type="text" name="nextCheckDate" id="nextDatePicker" placeholder="下次产检是什么时候？" class="layui-input" readonly>
+            </div>
+        </div>
+        <div class="layui-form-item" style="text-align: center; margin-top: 30px;">
+            <button class="layui-btn layui-bg-green" lay-submit lay-filter="saveCheckup" style="border-radius: 20px; width: 80%;">保存记录</button>
+        </div>
+    </form>
+</div>
+
+<script src="https://cdn.staticfile.org/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdn.staticfile.org/layui/2.9.11/layui.js"></script>
+<script src="https://cdn.staticfile.org/axios/1.6.8/axios.min.js"></script>
+
+<script>
+    var user = JSON.parse(localStorage.getItem('user'));
+    if(!user) window.location.href = 'login.html';
+
+    layui.use(['layer', 'laydate', 'form'], function(){
+        var layer = layui.layer;
+        var laydate = layui.laydate;
+        var form = layui.form;
+
+        // 初始化日期选择器
+        laydate.render({ elem: '#datePicker' });
+        laydate.render({ elem: '#nextDatePicker' });
+
+        // 1. 加载列表
+        function loadList() {
+            axios.get('http://localhost:8080/api/checkup/list?userId=' + user.userId)
+                .then(res => {
+                    var list = res.data.data;
+                    var html = '';
+
+                    if(list.length === 0) {
+                        $('#emptyBox').show();
+                        $('#timelineBox').html('');
+                    } else {
+                        $('#emptyBox').hide();
+                        list.forEach(item => {
+                            html += `
+                            <li class="layui-timeline-item">
+                                <i class="layui-icon layui-timeline-axis"></i>
+                                <div class="layui-timeline-content layui-text">
+                                    <div class="checkup-card">
+                                        <div class="card-week">🤰 孕 ${item.weekNo} 周产检</div>
+                                        <span class="card-date">${item.checkDate}</span>
+                                        <div class="card-advice">
+                                            <strong>💊 医嘱：</strong>${item.doctorAdvice || '无特殊医嘱，一切正常'}
+                                        </div>
+                                        ${item.nextCheckDate ? `<div class="next-date"><i class="fa fa-bell"></i> 下次预约：${item.nextCheckDate}</div>` : ''}
+                                    </div>
+                                </div>
+                            </li>`;
+                        });
+                        $('#timelineBox').html(html);
+                    }
+                });
+        }
+        loadList();
+
+        // 2. 点击新增
+        $('#addBtn').click(function(){
+            layer.open({
+                type: 1,
+                title: '📝 新增产检记录',
+                area: ['500px', '450px'],
+                content: $('#addForm'), // 弹窗内容引用上面的 div
+                shadeClose: true
+            });
+        });
+
+        // 3. 提交保存
+        form.on('submit(saveCheckup)', function(data){
+            var field = data.field;
+            field.userId = user.userId;
+
+            var loading = layer.load(2);
+            axios.post('http://localhost:8080/api/checkup/add', field)
+                .then(res => {
+                    layer.close(loading);
+                    if(res.data.code === 200){
+                        layer.closeAll('page'); // 关闭弹窗
+                        layer.msg('保存成功！', {icon: 1});
+                        loadList(); // 刷新列表
+                        // 清空表单
+                        $('#addForm')[0].reset();
+                    } else {
+                        layer.msg('保存失败', {icon: 2});
+                    }
+                });
+            return false;
+        });
+    });
+</script>
+
+</body>
+</html>

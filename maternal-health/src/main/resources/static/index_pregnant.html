@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>孕妈中心 - 首页</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.11/css/layui.css">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        /* 复用之前的梦幻背景和磨砂样式 (样式未变，逻辑升级) */
+        body {
+            background: linear-gradient(-45deg, #ff9a9e, #fad0c4, #a18cd1, #fbc2eb);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            height: 100vh;
+            overflow: hidden;
+        }
+        @keyframes gradientBG { 0% {background-position:0% 50%} 50% {background-position:100% 50%} 100% {background-position:0% 50%} }
+
+        .layui-layout-admin .layui-header, .layui-layout-admin .layui-side {
+            background-color: rgba(255, 255, 255, 0.6) !important;
+            backdrop-filter: blur(15px);
+            border: none; box-shadow: none !important;
+        }
+        .layui-layout-admin .layui-side { border-right: 1px solid rgba(255,255,255,0.3); }
+        .layui-layout-admin .layui-logo { background-color: rgba(255, 92, 160, 0.8) !important; color: #fff !important; backdrop-filter: blur(5px); }
+        .layui-nav-tree, .layui-nav { background-color: transparent !important; }
+
+        .layui-nav-tree .layui-nav-item a { color: #555 !important; height: 50px; line-height: 50px; border-radius: 0 25px 25px 0; margin-right: 10px; transition: all 0.3s; }
+        .layui-nav-tree .layui-nav-item a:hover { background-color: rgba(255, 255, 255, 0.8) !important; color: #ff5ca0 !important; padding-left: 25px; }
+        .layui-nav-tree .layui-this a { background: linear-gradient(to right, #ff758c, #ff7eb3) !important; color: white !important; box-shadow: 2px 5px 10px rgba(255, 117, 140, 0.4); }
+        .layui-nav-tree .layui-nav-bar { display: none !important; }
+
+        .layui-nav-item:nth-child(1) a i { color: #2196f3; }
+        .layui-nav-item:nth-child(2) a i { color: #9c27b0; }
+        .layui-nav-item:nth-child(3) a i { color: #e91e63; }
+        .layui-nav-item:nth-child(4) a i { color: #00bcd4; }
+        .layui-nav-item:nth-child(5) a i { color: #ff9800; }
+
+        .layui-body { background-color: transparent !important; padding: 20px; overflow-y: scroll; }
+        .layui-footer { display: none; }
+
+        .welcome-banner {
+            background: linear-gradient(135deg, rgba(255,154,158,0.9), rgba(254,207,239,0.9));
+            color: white; padding: 30px; border-radius: 20px; position: relative; overflow: hidden;
+            box-shadow: 0 10px 20px rgba(255, 154, 158, 0.3); margin-bottom: 30px;
+            min-height: 140px;
+        }
+        .circle-decoration { position: absolute; background: rgba(255,255,255,0.2); border-radius: 50%; }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px);
+            border-radius: 16px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            margin-bottom: 25px; transition: transform 0.3s; cursor: pointer;
+        }
+        .glass-card:hover { transform: translateY(-3px); background: rgba(255, 255, 255, 0.95); }
+
+        .shortcut-icon {
+            width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 26px; margin: 0 auto 15px; transition: all 0.3s;
+        }
+        .glass-card:hover .shortcut-icon { transform: scale(1.1) rotate(10deg); color: white !important; background: #ff5ca0 !important; }
+
+        /* 待办列表样式升级 */
+        .todo-item {
+            padding: 15px 0; border-bottom: 1px dashed rgba(0,0,0,0.1);
+            color: #555; display: flex; align-items: center; justify-content: space-between;
+        }
+        .todo-item:last-child { border-bottom: none; }
+        .todo-left { display: flex; align-items: center; }
+        .todo-status { font-size: 12px; padding: 2px 8px; border-radius: 4px; margin-left: 10px; }
+        .status-done { background: #e8f5e9; color: #4caf50; }
+        .status-todo { background: #ffebee; color: #ff5ca0; }
+        .todo-action-btn {
+            font-size: 12px; color: #1890ff; cursor: pointer; border: 1px solid #1890ff;
+            padding: 2px 10px; border-radius: 10px; background: transparent;
+        }
+        .todo-action-btn:hover { background: #e6f7ff; }
+    </style>
+</head>
+<body class="layui-layout-body">
+<div class="layui-layout layui-layout-admin">
+
+    <div class="layui-header">
+        <div class="layui-logo"><i class="fa fa-heart"></i> 孕妈守护</div>
+        <ul class="layui-nav layui-layout-right">
+            <li class="layui-nav-item">
+                <a href="javascript:;">
+                    <img src="https://cdn-icons-png.flaticon.com/512/4603/4603681.png" class="layui-nav-img">
+                    <span id="headerName" style="color: #333; font-weight:bold;">加载中...</span>
+                </a>
+            </li>
+            <li class="layui-nav-item"><a href="login.html" style="color:#ff5ca0;"><i class="fa fa-sign-out"></i> 退出</a></li>
+        </ul>
+    </div>
+
+    <div class="layui-side">
+        <div class="layui-side-scroll">
+            <ul class="layui-nav layui-nav-tree">
+                <li class="layui-nav-item"><a href="dashboard.html"><i class="fa fa-bar-chart fa-fw"></i> 健康看板</a></li>
+                <li class="layui-nav-item"><a href="record.html"><i class="fa fa-pencil-square-o fa-fw"></i> 每日打卡</a></li>
+                <li class="layui-nav-item"><a href="ai_chat.html"><i class="fa fa-comments fa-fw"></i> AI 医生</a></li>
+                <li class="layui-nav-item"><a href="my_feedback.html"><i class="fa fa-envelope-o fa-fw"></i> 我的反馈</a></li>
+                <li class="layui-nav-item"><a href="ai_diet.html"><i class="fa fa-cutlery fa-fw"></i> AI 食谱</a></li>
+                <li class="layui-nav-item"><a href="prenatal.html"><i class="fa fa-calendar-check-o fa-fw"></i> 产检管理</a></li>
+                <li class="layui-nav-item"><a href="mall.html"><i class="fa fa-shopping-bag fa-fw"></i> 母婴商城</a></li>
+                <li class="layui-nav-item"><a href="my_orders.html"><i class="fa fa-list-alt fa-fw"></i> 我的订单</a></li>
+                <li class="layui-nav-item"><a href="knowledge.html"><i class="fa fa-book fa-fw"></i> 孕育百科</a></li>
+                <li class="layui-nav-item"><a href="profile.html"><i class="fa fa-user fa-fw"></i> 个人中心</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="layui-body">
+
+        <div class="welcome-banner">
+            <div class="circle-decoration" style="width: 150px; height: 150px; right: -30px; top: -50px;"></div>
+            <div class="circle-decoration" style="width: 80px; height: 80px; right: 100px; bottom: -20px;"></div>
+
+            <h2 id="welcomeTitle">👋 您好</h2>
+            <div id="pregnancyInfo" style="margin-top: 15px; font-size: 16px; line-height: 1.6;">
+                <i class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop"></i> 正在读取您的孕期档案...
+            </div>
+        </div>
+
+        <div class="layui-row layui-col-space25">
+            <div class="layui-col-md4">
+                <div class="glass-card" onclick="window.location.href='ai_chat.html'">
+                    <div class="shortcut-icon" style="color:#ff5ca0; background:#fff0f5;"><i class="fa fa-comments"></i></div>
+                    <div style="text-align: center;"><div style="font-size:18px; font-weight:bold; color:#333;">AI 智能问诊</div><div style="font-size:13px; color:#888; margin-top:5px;">24小时贴心守护</div></div>
+                </div>
+            </div>
+            <div class="layui-col-md4">
+                <div class="glass-card" onclick="window.location.href='record.html'">
+                    <div class="shortcut-icon" style="color:#2196f3; background:#e3f2fd;"><i class="fa fa-heartbeat"></i></div>
+                    <div style="text-align: center;"><div style="font-size:18px; font-weight:bold; color:#333;">今日打卡</div><div style="font-size:13px; color:#888; margin-top:5px;">记录点滴变化</div></div>
+                </div>
+            </div>
+            <div class="layui-col-md4">
+                <div class="glass-card" onclick="window.location.href='ai_diet.html'">
+                    <div class="shortcut-icon" style="color:#9c27b0; background:#f3e5f5;"><i class="fa fa-magic"></i></div>
+                    <div style="text-align: center;"><div style="font-size:18px; font-weight:bold; color:#333;">AI 定制食谱</div><div style="font-size:13px; color:#888; margin-top:5px;">吃得健康又营养</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <div class="glass-card" style="padding: 20px;">
+                <div style="font-weight:bold; color:#333; margin-bottom:15px; border-left:4px solid #ff5ca0; padding-left:10px;">
+                    📅 今日智能待办
+                </div>
+                <div id="todoContainer">
+                    <p style="text-align:center; color:#999; padding:20px;">正在获取任务状态...</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.staticfile.org/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdn.staticfile.org/layui/2.9.11/layui.js"></script>
+<script src="https://cdn.staticfile.org/axios/1.6.8/axios.min.js"></script>
+
+<script>
+    layui.use(['element', 'layer'], function(){
+        var layer = layui.layer;
+
+        // 1. 登录校验
+        var userStr = localStorage.getItem('user');
+        if(!userStr) { window.location.href = 'login.html'; return; }
+        var user = JSON.parse(userStr);
+
+        // 2. 动态问候语逻辑
+        var hour = new Date().getHours();
+        var greeting = "";
+        if (hour >= 5 && hour < 12) greeting = "🌞 早安";
+        else if (hour >= 12 && hour < 14) greeting = "🍱 午安";
+        else if (hour >= 14 && hour < 19) greeting = "☕ 下午好";
+        else if (hour >= 19 && hour < 23) greeting = "🌙 晚上好";
+        else greeting = "🌌 夜深了";
+
+        // 更新问候
+        $('#welcomeTitle').text(greeting + '，' + (user.realName || '孕妈'));
+        $('#headerName').text(user.realName || user.username);
+
+        // 3. 获取档案信息 & 刷新待办列表
+        axios.get('http://localhost:8080/api/profile/info?userId=' + user.userId)
+            .then(res => {
+                var profile = res.data.data.profile;
+
+                // 情况A: 没填档案
+                if (!profile || !profile.lmpDate) {
+                    $('#pregnancyInfo').html('⚠️ 您的档案尚未完善，<a href="profile.html" style="color:#fff; text-decoration:underline;">点此去填写</a>，以便我们提供精准建议。');
+                    renderDefaultTodo();
+                    return;
+                }
+
+                // 情况B: 档案齐全 -> 计算孕周
+                var weekInfo = calculatePregnancy(profile.lmpDate);
+                renderSmartTodo(user.userId, weekInfo.week); // 根据孕周和打卡状态渲染待办
+            });
+
+        // --- 核心函数：渲染智能待办 ---
+        function renderSmartTodo(userId, currentWeek) {
+            var todoHtml = '';
+
+            // 任务1：检查今日是否打卡 (调用后端API)
+            axios.get('http://localhost:8080/api/record/today?userId=' + userId)
+                .then(res => {
+                    var isDone = (res.data.code === 200 && res.data.hasRecord);
+
+                    // 1. 打卡任务
+                    todoHtml += buildTodoItem(
+                        "完成每日健康数据打卡",
+                        isDone,
+                        "record.html",
+                        "fa-heartbeat"
+                    );
+
+                    // 2. 食谱任务 (检查本地存储日期)
+                    var todayStr = new Date().getFullYear() + '/' + (new Date().getMonth()+1) + '/' + new Date().getDate();
+                    var savedDate = localStorage.getItem('diet_plan_date');
+                    var isDietDone = (savedDate === todayStr);
+
+                    todoHtml += buildTodoItem(
+                        "生成今日 AI 营养食谱",
+                        isDietDone,
+                        "ai_diet.html",
+                        "fa-cutlery"
+                    );
+
+                    // 3. 孕周建议任务 (根据孕周动态生成)
+                    var weekTask = getWeekTask(currentWeek);
+                    todoHtml += `
+                        <div class="todo-item">
+                            <div class="todo-left">
+                                <i class="fa fa-info-circle" style="color:#1890ff; margin-right:10px; font-size:18px;"></i>
+                                <span>${weekTask}</span>
+                                <span class="todo-status status-todo" style="background:#e6f7ff; color:#1890ff;">本周建议</span>
+                            </div>
+                        </div>
+                    `;
+
+                    $('#todoContainer').html(todoHtml);
+                });
+        }
+
+        // 辅助函数：生成单条任务 HTML
+        function buildTodoItem(title, isDone, link, iconClass) {
+            var icon = isDone ? 'fa-check-circle' : 'fa-circle-o';
+            var color = isDone ? '#4caf50' : '#ff5ca0'; // 绿 vs 粉
+            var statusBadge = isDone
+                ? '<span class="todo-status status-done">已完成</span>'
+                : '<span class="todo-status status-todo">待完成</span>';
+            var btnText = isDone ? '查看' : '去完成';
+
+            return `
+                <div class="todo-item">
+                    <div class="todo-left">
+                        <i class="fa ${icon}" style="color:${color}; margin-right:10px; font-size:18px;"></i>
+                        <span style="${isDone ? 'text-decoration: line-through; color:#999;' : ''}">${title}</span>
+                        ${statusBadge}
+                    </div>
+                    <button class="todo-action-btn" onclick="window.location.href='${link}'">${btnText}</button>
+                </div>
+            `;
+        }
+
+        // 辅助函数：根据孕周返回建议
+        function getWeekTask(week) {
+            if(week < 12) return "记得按时补充叶酸哦";
+            if(week === 12) return "第12周：记得预约 NT 检查";
+            if(week > 12 && week < 20) return "第16周左右：唐氏筛查不要忘";
+            if(week >= 20 && week < 24) return "大排畸检查（四维彩超）预约了吗？";
+            if(week >= 24 && week < 28) return "该准备去做糖耐量检测（OGTT）啦";
+            if(week >= 28 && week < 36) return "孕晚期啦，注意数胎动，每两周一次产检";
+            if(week >= 36) return "每周一次胎心监护，准备好待产包！";
+            return "保持好心情，宝宝在健康长大";
+        }
+
+        // 默认待办 (未填档案时显示)
+        function renderDefaultTodo() {
+            var html = `
+                <div class="todo-item"><div class="todo-left"><i class="fa fa-circle-o" style="color:#ff5ca0; margin-right:10px;"></i><span>完善个人孕期档案</span><span class="todo-status status-todo">待完成</span></div><button class="todo-action-btn" onclick="window.location.href='profile.html'">去填写</button></div>
+            `;
+            $('#todoContainer').html(html);
+        }
+
+        // 计算孕周
+        function calculatePregnancy(lmpDateStr) {
+            var lmp = new Date(lmpDateStr);
+            var today = new Date();
+            var diffTime = Math.abs(today - lmp);
+            var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            var weeks = Math.floor(diffDays / 7);
+            var days = diffDays % 7;
+
+            // 水果比喻
+            var fruit = "芝麻";
+            if(weeks < 4) fruit = "罂粟籽";
+            else if(weeks < 8) fruit = "蓝莓";
+            else if(weeks < 12) fruit = "草莓";
+            else if(weeks < 16) fruit = "柠檬";
+            else if(weeks < 20) fruit = "牛油果";
+            else if(weeks < 24) fruit = "大香蕉";
+            else if(weeks < 28) fruit = "茄子";
+            else if(weeks < 32) fruit = "大白菜";
+            else if(weeks < 36) fruit = "哈密瓜";
+            else fruit = "大西瓜";
+
+            var html = `今天是孕期第 <strong style="font-size:26px; color:#fff;">${weeks}</strong> 周 + ${days} 天 <br>宝宝现在像个 <strong style="color:#fff;">${fruit}</strong> 那么大啦！✨`;
+            $('#pregnancyInfo').html(html).hide().fadeIn(1000);
+
+            return { week: weeks, day: days };
+        }
+    });
+</script>
+</body>
+</html>

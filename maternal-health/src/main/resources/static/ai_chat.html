@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>AI 智能产科医生</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.11/css/layui.css">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <style>
+        /* 1. 背景与容器：做成手机APP的样式，居中显示 */
+        body {
+            background-color: #f2f2f2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: "Microsoft YaHei";
+        }
+
+        .mobile-frame {
+            width: 100%;
+            max-width: 600px; /* 限制最大宽度，防止在大屏上拉伸变形 */
+            height: 100%;     /* 高度占满，或者设为 90vh 让他像个漂浮窗口 */
+            background: #fff;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 2. 顶部导航 */
+        .chat-header {
+            height: 60px;
+            background: linear-gradient(to right, #ff85c0, #ff5ca0);
+            color: white;
+            padding: 0 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0; /* 防止被挤压 */
+        }
+        .header-info { display: flex; align-items: center; }
+        .header-avatar { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.8); margin-right: 10px; background: #fff; }
+
+        .header-btn {
+            color: white; border: 1px solid rgba(255,255,255,0.6); border-radius: 15px;
+            padding: 4px 10px; font-size: 12px; text-decoration: none; margin-left: 5px;
+        }
+
+        /* 3. 聊天滚动区 */
+        .chat-box {
+            flex: 1; /* 自动占据剩余空间 */
+            background-color: #f5f7fa;
+            padding: 20px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* 4. 消息气泡 */
+        .message { display: flex; margin-bottom: 20px; }
+
+        .msg-avatar {
+            width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+            background-size: cover;
+        }
+        .msg-content {
+            max-width: 75%; padding: 10px 14px; border-radius: 8px;
+            font-size: 15px; line-height: 1.5; position: relative; word-wrap: break-word;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        /* AI 样式 */
+        .message.ai .msg-avatar { margin-right: 10px; background-image: url('https://cdn-icons-png.flaticon.com/512/3304/3304567.png'); background-color: #fff; }
+        .message.ai .msg-content { background: #fff; color: #333; border-top-left-radius: 0; }
+
+        /* 用户样式 */
+        .message.user { flex-direction: row-reverse; }
+        .message.user .msg-avatar { margin-left: 10px; background-image: url('https://cdn-icons-png.flaticon.com/512/4603/4603681.png'); background-color: #ffcce0; }
+        .message.user .msg-content { background: #ff85c0; color: white; border-top-right-radius: 0; text-align: left; }
+
+        /* 5. 底部输入区 */
+        .chat-footer {
+            min-height: 60px;
+            background: #fff;
+            border-top: 1px solid #eee;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .input-box {
+            flex: 1;
+            height: 40px;
+            border-radius: 20px;
+            border: 1px solid #ddd;
+            background: #f9f9f9;
+            padding: 0 15px;
+            outline: none;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        .input-box:focus { border-color: #ff85c0; background: #fff; }
+
+        .send-btn {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: linear-gradient(135deg, #ff85c0, #ff5ca0);
+            color: white; border: none; font-size: 18px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 3px 8px rgba(255, 92, 160, 0.3);
+        }
+        .send-btn:hover { transform: scale(1.05); }
+
+        /* 正在输入 */
+        .typing-tip {
+            position: absolute; bottom: 70px; left: 60px;
+            font-size: 12px; color: #999; background: rgba(255,255,255,0.8);
+            padding: 2px 8px; border-radius: 4px; display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="mobile-frame">
+    <div class="chat-header">
+        <div class="header-info">
+            <div class="header-avatar">
+                <img src="https://cdn-icons-png.flaticon.com/512/3304/3304567.png" style="width:100%; height:100%;">
+            </div>
+            <div>
+                <div style="font-size: 16px; font-weight: bold;">智能产科医生</div>
+                <div style="font-size: 12px; opacity: 0.9;">AI 24h 在线</div>
+            </div>
+        </div>
+        <div>
+            <a href="feedback.html" class="header-btn"><i class="fa fa-pencil"></i> 反馈</a>
+            <a href="index_pregnant.html" class="header-btn"><i class="fa fa-times"></i></a>
+        </div>
+    </div>
+
+    <div class="chat-box" id="chatBox">
+        <div class="message ai">
+            <div class="msg-avatar"></div>
+            <div class="msg-content">
+                👋 您好！我是您的专属智能医生。<br>
+                产检疑问、营养建议、身体不适，都可以问我哦！
+            </div>
+        </div>
+    </div>
+
+    <div class="typing-tip" id="typingTip">对方正在输入...</div>
+
+    <div class="chat-footer">
+        <input type="text" class="input-box" id="msgInput" placeholder="请描述您的问题...">
+        <button class="send-btn" id="sendBtn"><i class="fa fa-paper-plane"></i></button>
+    </div>
+</div>
+
+<script src="https://cdn.staticfile.org/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdn.staticfile.org/axios/1.6.8/axios.min.js"></script>
+<script src="https://cdn.staticfile.org/marked/9.1.2/marked.min.js"></script>
+<script src="https://cdn.staticfile.org/layui/2.9.11/layui.js"></script>
+
+<script>
+    const API_URL = 'http://localhost:8080/api/ai/chat';
+
+    var user = JSON.parse(localStorage.getItem('user'));
+    if(!user) location.href = 'login.html';
+
+    function sendMessage() {
+        var text = $('#msgInput').val().trim();
+        if(!text) return;
+
+        appendMessage('user', text);
+        $('#msgInput').val('').focus();
+
+        $('#typingTip').show();
+        scrollToBottom();
+
+        axios.post(API_URL, {
+            userId: user.userId,
+            message: text
+        }).then(res => {
+            $('#typingTip').hide();
+            var reply = res.data.reply || "AI 暂时繁忙，请稍后。";
+            appendMessage('ai', reply);
+        }).catch(err => {
+            $('#typingTip').hide();
+            appendMessage('ai', '网络连接失败，请检查后端。');
+        });
+    }
+
+    function appendMessage(role, text) {
+        var contentHtml = role === 'ai' ? marked.parse(text) : text;
+        var html = `
+                <div class="message ${role}">
+                    <div class="msg-avatar"></div>
+                    <div class="msg-content">${contentHtml}</div>
+                </div>
+            `;
+        $('#chatBox').append(html);
+        scrollToBottom();
+    }
+
+    function scrollToBottom() {
+        var box = document.getElementById('chatBox');
+        box.scrollTop = box.scrollHeight;
+    }
+
+    $('#sendBtn').click(sendMessage);
+    $('#msgInput').keydown(function(e){
+        if(e.keyCode === 13) sendMessage();
+    });
+</script>
+</body>
+</html>
