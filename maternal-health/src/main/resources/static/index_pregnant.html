@@ -220,7 +220,7 @@
 
                     // 2. 食谱任务 (检查本地存储日期)
                     var todayStr = new Date().getFullYear() + '/' + (new Date().getMonth()+1) + '/' + new Date().getDate();
-                    var savedDate = localStorage.getItem('diet_plan_date');
+                    var savedDate = localStorage.getItem('diet_plan_date_' + userId);
                     var isDietDone = (savedDate === todayStr);
 
                     todoHtml += buildTodoItem(

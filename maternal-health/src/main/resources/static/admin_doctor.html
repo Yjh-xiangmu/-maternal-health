@@ -106,7 +106,7 @@
         // 新增
         $('#addDoctorBtn').click(function(){
             isEdit = false;
-            $('#addForm')[0].reset();
+            $('#addForm form')[0].reset();
             $('#phoneInput').removeAttr('readonly').removeClass('layui-disabled');
             form.render();
             layer.open({ type: 1, title: '👩‍⚕️ 添加新医生', area: ['500px', '550px'], content: $('#addForm') });
